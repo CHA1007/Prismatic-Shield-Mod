@@ -1,0 +1,13 @@
+{
+  "itemGroup.somefunstuff": "Example Mod Tab",
+  "block.somefunstuff.example_block": "Example Block",
+  "item.somefunstuff.example_item": "Example Item",
+
+  "somefunstuff.configuration.title": "Some Fun Stuff Configs",
+  "somefunstuff.configuration.section.somefunstuff.common.toml": "Some Fun Stuff Configs",
+  "somefunstuff.configuration.section.somefunstuff.common.toml.title": "Some Fun Stuff Configs",
+  "somefunstuff.configuration.items": "Item List",
+  "somefunstuff.configuration.logDirtBlock": "Log Dirt Block",
+  "somefunstuff.configuration.magicNumberIntroduction": "Magic Number Text",
+  "somefunstuff.configuration.magicNumber": "Magic Number"
+}

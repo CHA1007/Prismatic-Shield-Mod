@@ -1,0 +1,212 @@
+package com.chadate.somefunstuff.event;
+
+import com.chadate.somefunstuff.SomeFunStuff;
+import com.chadate.somefunstuff.capability.ShieldCapabilities;
+import com.chadate.somefunstuff.capability.ShieldCapability;
+import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
+import com.chadate.somefunstuff.network.ShieldImpactPacket;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+
+import java.util.List;
+
+/**
+ * 护盾事件处理器
+ * 负责拦截弹射物
+ */
+@EventBusSubscriber(modid = SomeFunStuff.MODID)
+public class ShieldEventHandler {
+
+    /**
+     * 玩家登录时同步护盾数据到客户端
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        ShieldCapability shield = serverPlayer.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+        if (shield == null) {
+            return;
+        }
+        ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+            shield.isShieldActive(),
+            shield.getShieldRadius(),
+            shield.getShieldStrength()
+        );
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
+        SomeFunStuff.LOGGER.info("[ShieldSync] 登录同步护盾: active={}, radius={}, strength={}",
+            shield.isShieldActive(), shield.getShieldRadius(), shield.getShieldStrength());
+    }
+
+    /**
+     * 玩家切换维度时同步护盾数据到客户端
+     */
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        ShieldCapability shield = serverPlayer.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+        if (shield == null) {
+            return;
+        }
+        ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+            shield.isShieldActive(),
+            shield.getShieldRadius(),
+            shield.getShieldStrength()
+        );
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
+        SomeFunStuff.LOGGER.info("[ShieldSync] 维度切换同步护盾: active={}, radius={}, strength={}",
+            shield.isShieldActive(), shield.getShieldRadius(), shield.getShieldStrength());
+    }
+
+    /**
+     * 在玩家每个Tick主动扫描护盾范围内的弹射物
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(EntityTickEvent.Pre event) {
+        // 只处理玩家
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+
+        // 只在服务端执行
+        if (player.level().isClientSide) {
+            return;
+        }
+
+        // 检查玩家是否有激活的护盾
+        ShieldCapability shield = player.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+        if (shield == null || !shield.isShieldActive()) {
+            return;
+        }
+
+        // 护盾中心点（玩家胸部高度，与渲染一致）
+        Vec3 shieldCenter = player.position().add(0, player.getEyeHeight() / 2, 0);
+        double radius = shield.getShieldRadius();
+
+        // 创建护盾范围的检测盒
+        AABB searchBox = new AABB(
+                shieldCenter.x - radius, shieldCenter.y - radius, shieldCenter.z - radius,
+                shieldCenter.x + radius, shieldCenter.y + radius, shieldCenter.z + radius);
+
+        // 扫描范围内的所有弹射物
+        List<Projectile> projectiles = player.level().getEntitiesOfClass(
+                Projectile.class,
+                searchBox,
+                projectile -> {
+                    // 过滤掉玩家自己的弹射物
+                    if (projectile.getOwner() == player) {
+                        return false;
+                    }
+
+                    // 检查是否在护盾半径内
+                    double distance = projectile.position().distanceTo(shieldCenter);
+                    return distance <= radius;
+                });
+
+        // 拦截并反弹所有弹射物
+        for (Projectile projectile : projectiles) {
+            deflectProjectile(projectile, player, shield);
+        }
+    }
+
+    /**
+     * 偏转弹射物
+     */
+    private static void deflectProjectile(Projectile projectile, Player player, ShieldCapability shieldCap) {
+        // 计算反射方向（从玩家到弹射物的方向）
+        Vec3 shieldCenter = player.position().add(0, player.getEyeHeight() / 2, 0);
+        Vec3 projectilePos = projectile.position();
+        Vec3 deflectDirection = projectilePos.subtract(shieldCenter).normalize();
+
+        // 计算弹射物与护盾表面的交点（准确的击中位置）
+        double shieldRadius = shieldCap.getShieldRadius();
+        Vec3 impactPoint = shieldCenter.add(deflectDirection.scale(shieldRadius));
+
+        // 设置弹射物的新速度（反射）
+        double speed = projectile.getDeltaMovement().length();
+        Vec3 newVelocity = deflectDirection.scale(speed * 0.8);
+        projectile.setDeltaMovement(newVelocity);
+
+        // 改变弹射物的所有者，避免伤害玩家
+        if (projectile.getOwner() != player) {
+            projectile.setOwner(player);
+        }
+
+        // 消耗护盾强度
+        if (shieldCap.consumeStrength(1)) {
+            ShieldCapability newShield = shieldCap.withConsumedStrength(1);
+            player.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
+
+            // 同步到客户端
+            if (player instanceof ServerPlayer serverPlayer) {
+                ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+                        newShield.active(),
+                        newShield.radius(),
+                        newShield.strength());
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
+            }
+        }
+
+        // 发送击中效果包到客户端（使用护盾表面交点位置）
+        if (player instanceof ServerPlayer serverPlayer) {
+            ShieldImpactPacket impactPacket = new ShieldImpactPacket(impactPoint);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, impactPacket);
+
+            // 调试日志
+            SomeFunStuff.LOGGER.info("[ShieldImpact] 发送击中效果: {}, 护盾半径: {}",
+                    impactPoint, shieldRadius);
+        }
+
+        // 添加声音效果（在击中点位置）
+        spawnDeflectEffects(player, impactPoint, shieldCap);
+
+        SomeFunStuff.LOGGER.debug("Deflected projectile {} for player {}",
+                projectile.getType().toString(), player.getName().getString());
+    }
+
+    /**
+     * 生成弹射物反弹的声音效果
+     */
+    private static void spawnDeflectEffects(Player player, Vec3 position, ShieldCapability shieldCap) {
+        if (!(player.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        // 播放音效
+        if (shieldCap.getShieldStrength() > 50) {
+            // 强力护盾：使用铁砧着陆音效（金属撞击感）
+            serverLevel.playSound(null, position.x, position.y, position.z,
+                    SoundEvents.ANVIL_LAND, SoundSource.PLAYERS,
+                    0.5f, 1.5f);
+        } else if (shieldCap.getShieldStrength() > 20) {
+            // 中等护盾：使用玻璃破碎音效
+            serverLevel.playSound(null, position.x, position.y, position.z,
+                    SoundEvents.GLASS_BREAK, SoundSource.PLAYERS,
+                    0.7f, 1.2f);
+        } else {
+            // 弱化护盾：使用盾牌破损音效
+            serverLevel.playSound(null, position.x, position.y, position.z,
+                    SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS,
+                    0.8f, 0.8f);
+        }
+
+        // 额外的"嗡嗡"音效
+        serverLevel.playSound(null, position.x, position.y, position.z,
+                SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS,
+                0.3f, 2.0f);
+    }
+}
