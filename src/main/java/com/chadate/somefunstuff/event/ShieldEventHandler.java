@@ -57,8 +57,6 @@ public class ShieldEventHandler {
             return;
         }
 
-        // 遍历服务器世界中的所有实体
-        int syncCount = 0;
         for (var entity : serverPlayer.serverLevel().getAllEntities()) {
             ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
             if (shield != null && shield.isShieldActive()) {
@@ -69,7 +67,6 @@ public class ShieldEventHandler {
                         shield.getShieldRadius(),
                         shield.getShieldStrength());
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
-                syncCount++;
             }
         }
 
@@ -85,8 +82,6 @@ public class ShieldEventHandler {
             return;
         }
 
-        // 遍历玩家当前所在维度的所有实体
-        int syncCount = 0;
         for (var entity : serverPlayer.serverLevel().getAllEntities()) {
             ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
             if (shield != null && shield.isShieldActive()) {
@@ -97,7 +92,6 @@ public class ShieldEventHandler {
                         shield.getShieldRadius(),
                         shield.getShieldStrength());
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
-                syncCount++;
             }
         }
 
