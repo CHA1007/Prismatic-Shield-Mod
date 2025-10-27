@@ -89,7 +89,13 @@ public class AdvancedShieldRenderer {
         
         // 获取相机位置
         Vec3 cameraPos = event.getCamera().getPosition();
-        Vec3 shieldCenter = player.position().add(0, player.getEyeHeight() / 2, 0);
+        
+        // 使用 partialTick 插值玩家位置，确保护盾平滑跟随玩家移动（修复延迟感）
+        Vec3 shieldCenter = new Vec3(
+            Mth.lerp(partialTick, player.xOld, player.getX()),
+            Mth.lerp(partialTick, player.yOld, player.getY()) + player.getEyeHeight() / 2,
+            Mth.lerp(partialTick, player.zOld, player.getZ())
+        );
         
         // 计算相对位置
         double relX = shieldCenter.x - cameraPos.x;
@@ -279,7 +285,6 @@ public class AdvancedShieldRenderer {
             float gOuter = g + dg * 0.5f;
             
             // 环中心方向（单位向量）- 直接使用存储的相对方向
-            // 这样无论护盾如何移动，扩散环都会保持在护盾表面的相同位置
             Vec3 cVec = impact.directionFromCenter;
             // 选取参考向量避免与cVec平行
             Vec3 up = Math.abs(cVec.y) > 0.9 ? new Vec3(1,0,0) : new Vec3(0,1,0);

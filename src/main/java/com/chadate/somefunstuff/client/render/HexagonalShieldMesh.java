@@ -16,6 +16,16 @@ public class HexagonalShieldMesh {
     private static final float HEX_SIZE = 0.15f; // 六边形大小
     private static final float HEX_THICKNESS = 0.02f; // 六边形边框厚度
     
+    /** 动态六边形数量（根据性能等级调整） */
+    private static int hexagonCount = 100;
+    
+    /**
+     * 更新六边形数量（用于性能调整）
+     */
+    public static void updateHexagonCount(int count) {
+        hexagonCount = Math.max(50, Math.min(200, count)); // 限制在50-200之间
+    }
+    
     /**
      * 生成并渲染六边形网格护盾
      * 
@@ -33,7 +43,7 @@ public class HexagonalShieldMesh {
                                             double radius, float r, float g, float b, 
                                             float alpha, float time, Vec3 shieldCenter) {
         // 使用黄金分割螺旋均匀分布六边形
-        int hexCount = 150; // 六边形数量
+        int hexCount = hexagonCount; // 使用动态配置的数量
         float goldenRatio = (1.0f + Mth.sqrt(5.0f)) / 2.0f;
         
         for (int i = 0; i < hexCount; i++) {
@@ -53,15 +63,15 @@ public class HexagonalShieldMesh {
             float distanceFromTop = (float)Math.abs(y);
             float energyFlow = (Mth.sin(time * 0.5f + distanceFromTop * 2.0f + i * 0.1f) + 1.0f) * 0.5f;
             
-            // 计算受击影响（冲击波效果）
-            Vec3 hexWorldPos = shieldCenter.add(x, y, z);
-            float impactInfluence = ShieldImpactEffect.getImpactInfluence(hexWorldPos, shieldCenter, radius);
-            float flashIntensity = ShieldImpactEffect.getFlashIntensity(hexWorldPos, shieldCenter, radius);
+            // 计算受击影响（冲击波效果）- 优化版：减少计算
+            float impactInfluence = 0.0f;
+            float flashIntensity = 0.0f;
             
-            // 调试：输出第一个六边形的影响值
-            if (i == 0 && impactInfluence > 0.01f) {
-                SomeFunStuff.LOGGER.info("[HexImpact] 六边形#{} 位置:{} 影响:{} 闪光:{}",
-                    i, hexWorldPos, impactInfluence, flashIntensity);
+            // 仅在需要时计算受击效果（每5个六边形采样一次）
+            if (i % 5 == 0) {
+                Vec3 hexWorldPos = shieldCenter.add(x, y, z);
+                impactInfluence = ShieldImpactEffect.getImpactInfluence(hexWorldPos, shieldCenter, radius);
+                flashIntensity = ShieldImpactEffect.getFlashIntensity(hexWorldPos, shieldCenter, radius);
             }
             
             // 组合所有效果（大幅增强影响系数）
