@@ -234,6 +234,13 @@ public class AdvancedShieldRenderer {
         // 加法混合，增强亮度但不增加遮挡
         RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        // *** 关键修复 ***
+        // 启用深度测试，使扩散环能够被前方物体（如角色）正确遮挡
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515); // GL_LEQUAL - 小于等于深度值的片段通过测试
+        
+        // 关闭深度写入（半透明物体不应修改深度缓冲区）
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         
