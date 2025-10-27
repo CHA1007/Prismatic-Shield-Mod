@@ -1,6 +1,5 @@
 package com.chadate.somefunstuff.client.render;
 
-import com.chadate.somefunstuff.SomeFunStuff;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -107,7 +106,7 @@ public class HexagonalShieldMesh {
                      tangent.z * offsetX + bitangent.z * offsetY);
         }
         
-        // 渲染六边形内部（三角扇）
+        // 渲染六边形内部（三角扇）- 反转顶点顺序让正面朝外
         for (int i = 0; i < 6; i++) {
             Vector3f v1 = vertices[i];
             Vector3f v2 = vertices[(i + 1) % 6];
@@ -116,12 +115,12 @@ public class HexagonalShieldMesh {
             consumer.addVertex(matrix, center.x, center.y, center.z)
                    .setColor(r, g, b, alpha * 0.3f);
             
-            // 边缘点1
-            consumer.addVertex(matrix, v1.x, v1.y, v1.z)
+            // 边缘点2（反转顺序：center -> v2 -> v1）
+            consumer.addVertex(matrix, v2.x, v2.y, v2.z)
                    .setColor(r, g, b, alpha);
             
-            // 边缘点2
-            consumer.addVertex(matrix, v2.x, v2.y, v2.z)
+            // 边缘点1
+            consumer.addVertex(matrix, v1.x, v1.y, v1.z)
                    .setColor(r, g, b, alpha);
         }
         
@@ -153,20 +152,20 @@ public class HexagonalShieldMesh {
     private static void renderQuad(VertexConsumer consumer, Matrix4f matrix,
                                   Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
                                   float r, float g, float b, float alpha, Vector3f normal) {
-        // 三角形1
+        // 三角形1（反转顶点顺序：v1->v3->v2，让正面朝外）
         consumer.addVertex(matrix, v1.x, v1.y, v1.z)
+               .setColor(r, g, b, alpha);
+        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
                .setColor(r, g, b, alpha);
         consumer.addVertex(matrix, v2.x, v2.y, v2.z)
                .setColor(r, g, b, alpha);
-        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
-               .setColor(r, g, b, alpha);
         
-        // 三角形2
+        // 三角形2（反转顶点顺序：v1->v4->v3，让正面朝外）
         consumer.addVertex(matrix, v1.x, v1.y, v1.z)
                .setColor(r, g, b, alpha);
-        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
-               .setColor(r, g, b, alpha);
         consumer.addVertex(matrix, v4.x, v4.y, v4.z)
+               .setColor(r, g, b, alpha);
+        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
                .setColor(r, g, b, alpha);
     }
     

@@ -141,8 +141,10 @@ public class AdvancedShieldRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.depthMask(false);
-        RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();  // 启用深度测试，让护盾被地形遮挡
+        RenderSystem.depthFunc(515);  // GL_LESS
+        RenderSystem.depthMask(false);  // 禁用深度写入
+        RenderSystem.disableCull();  // 禁用面剔除以确保双面可见
         
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
@@ -172,20 +174,20 @@ public class AdvancedShieldRenderer {
                 // 应用内层透明度控制
                 float finalAlpha = pulse * INNER_LAYER_ALPHA_MULTIPLIER;
                 
-                // 三角形1
+                // 三角形1（反转顶点顺序：v1->v3->v2，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
+                      .setColor(color[0], color[1], color[2], finalAlpha);
+                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
                 buffer.addVertex(matrix, v2.x, v2.y, v2.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
-                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
-                      .setColor(color[0], color[1], color[2], finalAlpha);
                 
-                // 三角形2
+                // 三角形2（反转顶点顺序：v1->v4->v3，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
-                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
-                      .setColor(color[0], color[1], color[2], finalAlpha);
                 buffer.addVertex(matrix, v4.x, v4.y, v4.z)
+                      .setColor(color[0], color[1], color[2], finalAlpha);
+                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
             }
         }
@@ -204,8 +206,10 @@ public class AdvancedShieldRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.depthMask(false);
-        RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();  // 启用深度测试，让护盾被地形遮挡
+        RenderSystem.depthFunc(515);  // GL_LESS
+        RenderSystem.depthMask(false);  // 禁用深度写入
+        RenderSystem.disableCull();  // 禁用面剭除，确保双面可见
         
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
@@ -371,6 +375,8 @@ public class AdvancedShieldRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515);  // GL_LESS
         RenderSystem.depthMask(false);
         
         Tesselator tesselator = Tesselator.getInstance();
@@ -399,6 +405,8 @@ public class AdvancedShieldRenderer {
         // 加法混合模式 - 产生发光效果
         RenderSystem.blendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515);  // GL_LESS
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         
@@ -449,20 +457,20 @@ public class AdvancedShieldRenderer {
                 float heightFactor = Math.abs(Mth.cos((float)theta1));
                 float colorBoost = 1.3f + heightFactor * 0.5f;
                 
-                // 三角形1
+                // 三角形1（反转顶点顺序：v1->v3->v2，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
+                      .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
+                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
                       .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
                 buffer.addVertex(matrix, v2.x, v2.y, v2.z)
                       .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
-                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
-                      .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
                 
-                // 三角形2
+                // 三角形2（反转顶点顺序：v1->v4->v3，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
                       .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
-                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
-                      .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
                 buffer.addVertex(matrix, v4.x, v4.y, v4.z)
+                      .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
+                buffer.addVertex(matrix, v3.x, v3.y, v3.z)
                       .setColor(color[0] * colorBoost, color[1] * colorBoost, color[2] * colorBoost, finalGlowAlpha);
             }
         }

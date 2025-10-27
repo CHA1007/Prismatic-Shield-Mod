@@ -132,21 +132,21 @@ public class ShieldParticleSystem {
             tangent.z * -halfSize + bitangent.z * halfSize
         );
         
-        // 渲染四边形（两个三角形）
-        // 三角形1
+        // 渲染四边形（两个三角形）- 反转顶点顺序让正面朝外
+        // 三角形1（反转：v1->v3->v2）
         consumer.addVertex(matrix, v1.x, v1.y, v1.z)
+               .setColor(r, g, b, alpha);
+        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
                .setColor(r, g, b, alpha);
         consumer.addVertex(matrix, v2.x, v2.y, v2.z)
                .setColor(r, g, b, alpha);
-        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
-               .setColor(r, g, b, alpha);
         
-        // 三角形2
+        // 三角形2（反转：v1->v4->v3）
         consumer.addVertex(matrix, v1.x, v1.y, v1.z)
                .setColor(r, g, b, alpha);
-        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
-               .setColor(r, g, b, alpha);
         consumer.addVertex(matrix, v4.x, v4.y, v4.z)
+               .setColor(r, g, b, alpha);
+        consumer.addVertex(matrix, v3.x, v3.y, v3.z)
                .setColor(r, g, b, alpha);
     }
     
