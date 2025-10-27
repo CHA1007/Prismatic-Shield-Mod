@@ -57,6 +57,7 @@ public class AdvancedShieldRenderer {
      * 在世界渲染阶段绘制护盾
      * 支持所有实体的护盾渲染
      */
+    @SuppressWarnings("null")
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         // 只在半透明渲染阶段绘制
@@ -257,27 +258,23 @@ public class AdvancedShieldRenderer {
         RenderSystem.disableCull();
         
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-        boolean wroteAnyVertex = false;
         Matrix4f matrix = poseStack.last().pose();
         
-        // 圆环参数
-        final int SEGMENTS = 96;                // 圆环离散段数
-        final float THICKNESS_FRAC = 0.04f;     // 环厚（按球半径的弧长比例）
-        final float BASE_ALPHA = 1.5f * GLOW_LAYER_ALPHA_MULTIPLIER; // 基础透明度，随时间再淡出
-        final float COLOR_BOOST = 1.5f;         // 颜色提升
-        // 边缘噪声（细小扰动让边界更生动）
-        final float NOISE_AMP = 0.015f;         // 角度扰动幅度（弧度）
-        final float NOISE_FREQ = 7.0f;          // 随 theta 频率
-        final float NOISE_TIME_SPEED = 3.0f;    // 随时间流速
+        // 光滑圆环参数
+        final int SEGMENTS = 128;               // 圆环离散段数（更多段数让圆环更光滑）
+        final float THICKNESS_FRAC = 0.035f;    // 环厚（按球半径的弧长比例）
+        final float BASE_ALPHA = 1.8f * GLOW_LAYER_ALPHA_MULTIPLIER; // 基础透明度（提高亮度）
+        final float COLOR_BOOST = 1.6f;        // 颜色提升
         // 闪爆内环参数
-        final float FLASH_PHASE = 0.2f;         // 受击初期阶段（0..FLASH_PHASE）
-        final float FLASH_THICK_SCALE = 0.5f;   // 内环厚度比例
-        final float FLASH_ALPHA_BOOST = 1.5f;   // 内环额外亮度
+        final float FLASH_PHASE = 0.2f;        // 受击初期阶段（0..FLASH_PHASE）
+        final float FLASH_THICK_SCALE = 0.6f;  // 内环厚度比例
+        final float FLASH_ALPHA_BOOST = 2.0f;  // 内环额外亮度（增强闪光效果）
         
         // 只遍历当前实体的活跃受击
         var impacts = com.chadate.somefunstuff.client.render.ShieldImpactEffect.getActiveImpactsForEntity(entityId);
         for (var impact : impacts) {
+            // *** 关键修复：每个环形波使用独立的绘制批次，避免环与环之间产生连接线 ***
+            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
             // 进度与淡出
             float progress = impact.getProgress((long)(System.currentTimeMillis() / 50)); // 0..1
             float fade = (1.0f - progress);
@@ -303,7 +300,7 @@ public class AdvancedShieldRenderer {
             float cb = Math.min(1.0f, color[2] * COLOR_BOOST);
             float alpha = BASE_ALPHA * fade;
             
-            // 生成圆环（三角带：外边一圈 + 内边一圈）
+            // 生成光滑圆环（三角带：外边一圈 + 内边一圈）
             for (int i = 0; i <= SEGMENTS; i++) {
                 float theta = (float)(i * (Math.PI * 2.0) / SEGMENTS);
                 // 环方向（切向旋转）
@@ -312,31 +309,38 @@ public class AdvancedShieldRenderer {
                     t1v.y * Math.cos(theta) + t2v.y * Math.sin(theta),
                     t1v.z * Math.cos(theta) + t2v.z * Math.sin(theta)
                 );
-                // 边缘噪声扰动（随角度与时间变化）
-                float edgeNoise = (float)Math.sin(theta * NOISE_FREQ + time * NOISE_TIME_SPEED + i * 0.37f) * NOISE_AMP;
-                float gOuterN = Math.max(0.0f, gOuter + edgeNoise * 0.7f);
-                float gInnerN = Math.max(0.0f, gInner + edgeNoise * 1.0f);
                 
-                // 外圈点（角度 gOuterN）
-                Vec3 onSphereOuter = cVec.scale(Math.cos(gOuterN)).add(dir.scale(Math.sin(gOuterN))).normalize().scale(radius);
-                // 内圈点（角度 gInnerN）
-                Vec3 onSphereInner = cVec.scale(Math.cos(gInnerN)).add(dir.scale(Math.sin(gInnerN))).normalize().scale(radius);
+                // 光滑圆环：不添加噪声扰动，直接使用精确的角度
+                // 外圈点（角度 gOuter）
+                Vec3 onSphereOuter = cVec.scale(Math.cos(gOuter)).add(dir.scale(Math.sin(gOuter))).normalize().scale(radius);
+                // 内圈点（角度 gInner）
+                Vec3 onSphereInner = cVec.scale(Math.cos(gInner)).add(dir.scale(Math.sin(gInner))).normalize().scale(radius);
+                
+                // 边缘渐变效果：外边缘更亮，内边缘稍暗，形成清晰的轮廓
+                float edgeProgress = (float)i / SEGMENTS;
+                float edgeFactor = 1.0f - Math.abs((edgeProgress * 2.0f) - 1.0f) * 0.1f; // 轻微的亮度变化
                 
                 // 写入两点形成条带
                 buffer.addVertex(matrix, (float)onSphereOuter.x, (float)onSphereOuter.y, (float)onSphereOuter.z)
-                      .setColor(cr, cg, cb, alpha);
+                      .setColor(cr, cg, cb, alpha * edgeFactor);
                 buffer.addVertex(matrix, (float)onSphereInner.x, (float)onSphereInner.y, (float)onSphereInner.z)
-                      .setColor(cr, cg, cb, alpha * 0.8f);
-                wroteAnyVertex = true;
+                      .setColor(cr, cg, cb, alpha * 0.7f * edgeFactor);
             }
+            
+            // 绘制这个环形波
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
             
             // 受击初期叠加极细高亮内环（闪爆点）
             if (progress < FLASH_PHASE) {
+                // 为闪爆内环创建独立的BufferBuilder
+                BufferBuilder flashBuffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+                
                 float flashK = 1.0f - (progress / FLASH_PHASE); // 0..1
                 float flashAlpha = Math.min(1.0f, alpha * FLASH_ALPHA_BOOST * flashK);
                 float dgFlash = dg * FLASH_THICK_SCALE;
                 float gInnerFlash = Math.max(0.0f, g - dgFlash * 0.5f);
                 float gOuterFlash = g + dgFlash * 0.5f;
+                
                 for (int i = 0; i <= SEGMENTS; i++) {
                     float theta = (float)(i * (Math.PI * 2.0) / SEGMENTS);
                     Vec3 dir = new Vec3(
@@ -344,27 +348,25 @@ public class AdvancedShieldRenderer {
                         t1v.y * Math.cos(theta) + t2v.y * Math.sin(theta),
                         t1v.z * Math.cos(theta) + t2v.z * Math.sin(theta)
                     );
-                    // 更少的噪声，保证更“干净”的高亮环
-                    float edgeNoise2 = (float)Math.sin(theta * (NOISE_FREQ * 0.5f) + time * (NOISE_TIME_SPEED * 0.5f)) * (NOISE_AMP * 0.3f);
-                    float go = Math.max(0.0f, gOuterFlash + edgeNoise2 * 0.5f);
-                    float gi = Math.max(0.0f, gInnerFlash + edgeNoise2 * 0.5f);
-                    Vec3 pOuter = cVec.scale(Math.cos(go)).add(dir.scale(Math.sin(go))).normalize().scale(radius);
-                    Vec3 pInner = cVec.scale(Math.cos(gi)).add(dir.scale(Math.sin(gi))).normalize().scale(radius);
-                    // 用更亮的颜色（白色倾向）
-                    float wr = Math.min(1.0f, (cr + 1.0f) * 0.5f);
-                    float wg = Math.min(1.0f, (cg + 1.0f) * 0.5f);
-                    float wb = Math.min(1.0f, (cb + 1.0f) * 0.5f);
-                    buffer.addVertex(matrix, (float)pOuter.x, (float)pOuter.y, (float)pOuter.z)
+                    
+                    // 光滑闪爆内环：不使用噪声，直接使用精确的角度
+                    Vec3 pOuter = cVec.scale(Math.cos(gOuterFlash)).add(dir.scale(Math.sin(gOuterFlash))).normalize().scale(radius);
+                    Vec3 pInner = cVec.scale(Math.cos(gInnerFlash)).add(dir.scale(Math.sin(gInnerFlash))).normalize().scale(radius);
+                    
+                    // 用更亮的颜色（白色倾向）营造闪光效果
+                    float wr = Math.min(1.0f, (cr + 1.5f) * 0.5f);
+                    float wg = Math.min(1.0f, (cg + 1.5f) * 0.5f);
+                    float wb = Math.min(1.0f, (cb + 1.5f) * 0.5f);
+                    
+                    flashBuffer.addVertex(matrix, (float)pOuter.x, (float)pOuter.y, (float)pOuter.z)
                           .setColor(wr, wg, wb, flashAlpha);
-                    buffer.addVertex(matrix, (float)pInner.x, (float)pInner.y, (float)pInner.z)
-                          .setColor(wr, wg, wb, flashAlpha * 0.9f);
-                    wroteAnyVertex = true;
+                    flashBuffer.addVertex(matrix, (float)pInner.x, (float)pInner.y, (float)pInner.z)
+                          .setColor(wr, wg, wb, flashAlpha * 0.85f);
                 }
+                
+                // 绘制闪爆内环
+                BufferUploader.drawWithShader(flashBuffer.buildOrThrow());
             }
-        }
-        
-        if (wroteAnyVertex) {
-            BufferUploader.drawWithShader(buffer.buildOrThrow());
         }
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);

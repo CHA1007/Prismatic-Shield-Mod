@@ -71,7 +71,6 @@ public class ShieldImpactEffect {
         activeImpacts.add(new ImpactPoint(entityId, direction, currentTime));
         
         // 调试日志
-        SomeFunStuff.LOGGER.info("[ShieldImpact] 客户端注册击中效果 - 实体ID: {}, 世界坐标: {}, 相对方向: {}, 活跃数: {}", 
             entityId, hitPosition, direction, activeImpacts.size());
     }
     
@@ -97,7 +96,6 @@ public class ShieldImpactEffect {
         
         // 定期输出活跃击中数（仅当有效果时）
         if (!activeImpacts.isEmpty() && currentTime % 20 == 0) {
-            SomeFunStuff.LOGGER.info("[ShieldImpact] 活跃击中数: {}", activeImpacts.size());
         }
     }
     

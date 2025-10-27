@@ -49,6 +49,7 @@ public record ShieldDataSyncPacket(int entityId, boolean active, double radius, 
             }
             
             // 根据entityId查找实体
+            @SuppressWarnings("null")
             var entity = mc.level.getEntity(packet.entityId);
             if (entity == null) {
                 return;

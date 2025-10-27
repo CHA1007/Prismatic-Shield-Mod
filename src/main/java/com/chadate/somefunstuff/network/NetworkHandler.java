@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * 网络处理器
  * 负责注册所有的网络包
  */
-@EventBusSubscriber(modid = SomeFunStuff.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = SomeFunStuff.MODID)
 public class NetworkHandler {
     
     /**

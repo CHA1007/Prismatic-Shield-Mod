@@ -83,7 +83,8 @@ public class ShieldManager {
     }
     
     /**
-     * 同步护盾数据到客户端
+     * 同步护盾数据到所有客户端
+     * 修复：在多人服务器上，所有玩家都需要看到护盾状态变化
      */
     private static void syncToClient(Player player, ShieldCapability shield) {
         if (player instanceof ServerPlayer serverPlayer) {
@@ -93,7 +94,8 @@ public class ShieldManager {
                 shield.radius(),
                 shield.strength()
             );
-            PacketDistributor.sendToPlayer(serverPlayer, packet);
+            // 修复：同步到所有玩家，而不仅仅是操作者自己
+            PacketDistributor.sendToAllPlayers(packet);
         }
     }
 }
