@@ -22,16 +22,19 @@ public class ShieldImpactEffect {
      * 击中点数据结构
      */
     public static class ImpactPoint {
+        public final int entityId;              // 实体ID（用于区分不同实体的护盾）
         public final Vec3 directionFromCenter;  // 击中点相对于护盾中心的方向向量（单位向量）
         public final long startTime;            // 开始时间（游戏刻）
         public float intensity;                 // 强度（逐渐衰减）
         
         /**
          * 创建击中点（存储相对方向而非世界坐标）
+         * @param entityId 实体ID
          * @param directionFromCenter 从护盾中心指向击中点的单位方向向量
          * @param startTime 开始时间
          */
-        public ImpactPoint(Vec3 directionFromCenter, long startTime) {
+        public ImpactPoint(int entityId, Vec3 directionFromCenter, long startTime) {
+            this.entityId = entityId;
             this.directionFromCenter = directionFromCenter.normalize();
             this.startTime = startTime;
             this.intensity = 1.0f;
@@ -56,19 +59,20 @@ public class ShieldImpactEffect {
     /**
      * 注册一个新的击中效果
      * 
+     * @param entityId 实体ID（用于区分不同实体的护盾）
      * @param hitPosition 击中位置（世界坐标）
      * @param shieldCenter 护盾中心（世界坐标）
      */
-    public static void registerImpact(Vec3 hitPosition, Vec3 shieldCenter) {
+    public static void registerImpact(int entityId, Vec3 hitPosition, Vec3 shieldCenter) {
         long currentTime = System.currentTimeMillis() / 50; // 转换为游戏刻
         
         // 计算相对方向向量（从护盾中心指向击中点）
         Vec3 direction = hitPosition.subtract(shieldCenter).normalize();
-        activeImpacts.add(new ImpactPoint(direction, currentTime));
+        activeImpacts.add(new ImpactPoint(entityId, direction, currentTime));
         
         // 调试日志
-        SomeFunStuff.LOGGER.info("[ShieldImpact] 客户端注册击中效果 - 世界坐标: {}, 相对方向: {}, 活跃数: {}", 
-            hitPosition, direction, activeImpacts.size());
+        SomeFunStuff.LOGGER.info("[ShieldImpact] 客户端注册击中效果 - 实体ID: {}, 世界坐标: {}, 相对方向: {}, 活跃数: {}", 
+            entityId, hitPosition, direction, activeImpacts.size());
     }
     
     /**
@@ -102,6 +106,17 @@ public class ShieldImpactEffect {
      */
     public static List<ImpactPoint> getActiveImpacts() {
         return activeImpacts;
+    }
+    
+    /**
+     * 获取指定实体的活跃击中效果
+     * @param entityId 实体ID
+     * @return 属于该实体的击中点列表
+     */
+    public static List<ImpactPoint> getActiveImpactsForEntity(int entityId) {
+        return activeImpacts.stream()
+            .filter(impact -> impact.entityId == entityId)
+            .toList();
     }
     
     /**

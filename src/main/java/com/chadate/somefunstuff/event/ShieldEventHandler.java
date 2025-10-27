@@ -5,12 +5,7 @@ import com.chadate.somefunstuff.capability.ShieldCapabilities;
 import com.chadate.somefunstuff.capability.ShieldCapability;
 import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
 import com.chadate.somefunstuff.network.ShieldImpactPacket;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -41,6 +36,7 @@ public class ShieldEventHandler {
             return;
         }
         ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+            serverPlayer.getId(),
             shield.isShieldActive(),
             shield.getShieldRadius(),
             shield.getShieldStrength()
@@ -63,6 +59,7 @@ public class ShieldEventHandler {
             return;
         }
         ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+            serverPlayer.getId(),
             shield.isShieldActive(),
             shield.getShieldRadius(),
             shield.getShieldStrength()
@@ -73,28 +70,26 @@ public class ShieldEventHandler {
     }
 
     /**
-     * 在玩家每个Tick主动扫描护盾范围内的弹射物
+     * 在每个实体Tick主动扫描护盾范围内的弹射物
+     * 支持所有实体类型
      */
     @SubscribeEvent
-    public static void onPlayerTick(EntityTickEvent.Pre event) {
-        // 只处理玩家
-        if (!(event.getEntity() instanceof Player player)) {
-            return;
-        }
-
+    public static void onEntityTick(EntityTickEvent.Pre event) {
+        var entity = event.getEntity();
+        
         // 只在服务端执行
-        if (player.level().isClientSide) {
+        if (entity.level().isClientSide) {
             return;
         }
 
-        // 检查玩家是否有激活的护盾
-        ShieldCapability shield = player.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+        // 检查实体是否有激活的护盾
+        ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
         if (shield == null || !shield.isShieldActive()) {
             return;
         }
 
-        // 护盾中心点（玩家胸部高度，与渲染一致）
-        Vec3 shieldCenter = player.position().add(0, player.getEyeHeight() / 2, 0);
+        // 护盾中心点（实体胸部高度，与渲染一致）
+        Vec3 shieldCenter = entity.position().add(0, entity.getEyeHeight() / 2, 0);
         double radius = shield.getShieldRadius();
 
         // 创建护盾范围的检测盒
@@ -103,12 +98,12 @@ public class ShieldEventHandler {
                 shieldCenter.x + radius, shieldCenter.y + radius, shieldCenter.z + radius);
 
         // 扫描范围内的所有弹射物
-        List<Projectile> projectiles = player.level().getEntitiesOfClass(
+        List<Projectile> projectiles = entity.level().getEntitiesOfClass(
                 Projectile.class,
                 searchBox,
                 projectile -> {
-                    // 过滤掉玩家自己的弹射物
-                    if (projectile.getOwner() == player) {
+                    // 过滤掉实体自己的弹射物
+                    if (projectile.getOwner() == entity) {
                         return false;
                     }
 
@@ -119,16 +114,17 @@ public class ShieldEventHandler {
 
         // 拦截并反弹所有弹射物
         for (Projectile projectile : projectiles) {
-            deflectProjectile(projectile, player, shield);
+            deflectProjectile(projectile, entity, shield);
         }
     }
 
     /**
      * 偏转弹射物
+     * 支持所有实体类型
      */
-    private static void deflectProjectile(Projectile projectile, Player player, ShieldCapability shieldCap) {
-        // 计算反射方向（从玩家到弹射物的方向）
-        Vec3 shieldCenter = player.position().add(0, player.getEyeHeight() / 2, 0);
+    private static void deflectProjectile(Projectile projectile, net.minecraft.world.entity.Entity entity, ShieldCapability shieldCap) {
+        // 计算反射方向（从实体到弹射物的方向）
+        Vec3 shieldCenter = entity.position().add(0, entity.getEyeHeight() / 2, 0);
         Vec3 projectilePos = projectile.position();
         Vec3 deflectDirection = projectilePos.subtract(shieldCenter).normalize();
 
@@ -141,72 +137,31 @@ public class ShieldEventHandler {
         Vec3 newVelocity = deflectDirection.scale(speed * 0.8);
         projectile.setDeltaMovement(newVelocity);
 
-        // 改变弹射物的所有者，避免伤害玩家
-        if (projectile.getOwner() != player) {
-            projectile.setOwner(player);
+        // 改变弹射物的所有者，避免伤害实体
+        if (projectile.getOwner() != entity) {
+            projectile.setOwner(entity);
         }
 
         // 消耗护盾强度
         if (shieldCap.consumeStrength(1)) {
             ShieldCapability newShield = shieldCap.withConsumedStrength(1);
-            player.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
+            entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
 
-            // 同步到客户端
-            if (player instanceof ServerPlayer serverPlayer) {
-                ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
-                        newShield.active(),
-                        newShield.radius(),
-                        newShield.strength());
-                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
-            }
+            // 同步到所有客户端
+            ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+                    entity.getId(),
+                    newShield.active(),
+                    newShield.radius(),
+                    newShield.strength());
+            net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(packet);
         }
 
-        // 发送击中效果包到客户端（使用护盾表面交点位置和护盾中心）
-        if (player instanceof ServerPlayer serverPlayer) {
-            ShieldImpactPacket impactPacket = new ShieldImpactPacket(impactPoint, shieldCenter);
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, impactPacket);
+        // 发送击中效果包到所有玩家（包含实体ID）
+        ShieldImpactPacket impactPacket = new ShieldImpactPacket(entity.getId(), impactPoint, shieldCenter);
+        net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(impactPacket);
 
-            // 调试日志
-            SomeFunStuff.LOGGER.info("[ShieldImpact] 发送击中效果: {}, 护盾中心: {}, 护盾半径: {}",
-                    impactPoint, shieldCenter, shieldRadius);
-        }
-
-        // 添加声音效果（在击中点位置）
-        spawnDeflectEffects(player, impactPoint, shieldCap);
-
-        SomeFunStuff.LOGGER.debug("Deflected projectile {} for player {}",
-                projectile.getType().toString(), player.getName().getString());
-    }
-
-    /**
-     * 生成弹射物反弹的声音效果
-     */
-    private static void spawnDeflectEffects(Player player, Vec3 position, ShieldCapability shieldCap) {
-        if (!(player.level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-
-        // 播放音效
-        if (shieldCap.getShieldStrength() > 50) {
-            // 强力护盾：使用铁砧着陆音效（金属撞击感）
-            serverLevel.playSound(null, position.x, position.y, position.z,
-                    SoundEvents.ANVIL_LAND, SoundSource.PLAYERS,
-                    0.5f, 1.5f);
-        } else if (shieldCap.getShieldStrength() > 20) {
-            // 中等护盾：使用玻璃破碎音效
-            serverLevel.playSound(null, position.x, position.y, position.z,
-                    SoundEvents.GLASS_BREAK, SoundSource.PLAYERS,
-                    0.7f, 1.2f);
-        } else {
-            // 弱化护盾：使用盾牌破损音效
-            serverLevel.playSound(null, position.x, position.y, position.z,
-                    SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS,
-                    0.8f, 0.8f);
-        }
-
-        // 额外的"嗡嗡"音效
-        serverLevel.playSound(null, position.x, position.y, position.z,
-                SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS,
-                0.3f, 2.0f);
+        // 调试日志
+        SomeFunStuff.LOGGER.info("[ShieldImpact] 实体 {} 护盾反弹弹射物: {}, 护盾中心: {}, 护盾半径: {}",
+                entity.getName().getString(), impactPoint, shieldCenter, shieldRadius);
     }
 }

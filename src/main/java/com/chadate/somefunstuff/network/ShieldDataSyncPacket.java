@@ -13,15 +13,17 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * 护盾数据同步网络包
- * 用于将服务端的护盾数据同步到客户端
+ * 用于将服务端任意实体的护盾数据同步到客户端
  */
-public record ShieldDataSyncPacket(boolean active, double radius, int strength) implements CustomPacketPayload {
+public record ShieldDataSyncPacket(int entityId, boolean active, double radius, int strength) implements CustomPacketPayload {
     
     public static final Type<ShieldDataSyncPacket> TYPE = 
         new Type<>(ResourceLocation.fromNamespaceAndPath(SomeFunStuff.MODID, "shield_data_sync"));
     
     // 定义如何序列化和反序列化这个包
     public static final StreamCodec<ByteBuf, ShieldDataSyncPacket> STREAM_CODEC = StreamCodec.composite(
+        ByteBufCodecs.INT,
+        ShieldDataSyncPacket::entityId,
         ByteBufCodecs.BOOL,
         ShieldDataSyncPacket::active,
         ByteBufCodecs.DOUBLE,
@@ -41,19 +43,25 @@ public record ShieldDataSyncPacket(boolean active, double radius, int strength) 
      */
     public static void handleClient(ShieldDataSyncPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            var player = Minecraft.getInstance().player;
-            if (player == null) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) {
                 return;
             }
             
-            // 创建新的护盾数据并应用到玩家
+            // 根据entityId查找实体
+            var entity = mc.level.getEntity(packet.entityId);
+            if (entity == null) {
+                return;
+            }
+            
+            // 创建新的护盾数据并应用到实体
             ShieldCapability newShield = new ShieldCapability(
                 packet.active,
                 packet.radius,
                 packet.strength
             );
             
-            player.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
+            entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
         });
     }
 }

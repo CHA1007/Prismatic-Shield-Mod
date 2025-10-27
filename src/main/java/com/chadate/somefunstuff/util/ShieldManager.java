@@ -88,6 +88,7 @@ public class ShieldManager {
     private static void syncToClient(Player player, ShieldCapability shield) {
         if (player instanceof ServerPlayer serverPlayer) {
             ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+                serverPlayer.getId(),
                 shield.active(),
                 shield.radius(),
                 shield.strength()

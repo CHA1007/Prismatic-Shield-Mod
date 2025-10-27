@@ -11,7 +11,7 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -55,6 +55,7 @@ public class AdvancedShieldRenderer {
     
     /**
      * 在世界渲染阶段绘制护盾
+     * 支持所有实体的护盾渲染
      */
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -64,37 +65,38 @@ public class AdvancedShieldRenderer {
         }
         
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
+        if (mc.player == null || mc.level == null) {
             return;
         }
         
-        Player player = mc.player;
-        @SuppressWarnings("null")
-        ShieldCapability shield = player.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
-        
-        if (shield == null || !shield.isShieldActive()) {
-            return;
-        }
-        
-        // 渲染顶级护盾
-        renderAdvancedShield(event, player, shield);
+        // 遍历客户端世界中的所有实体
+        mc.level.entitiesForRendering().forEach(entity -> {
+            // 检查实体是否有护盾capability
+            ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+            
+            // 如果护盾存在且激活，则渲染
+            if (shield != null && shield.isShieldActive()) {
+                renderAdvancedShield(event, entity, shield);
+            }
+        });
     }
     
     /**
      * 顶级多层护盾渲染
+     * 支持所有实体类型
      */
-    private static void renderAdvancedShield(RenderLevelStageEvent event, Player player, ShieldCapability shield) {
+    private static void renderAdvancedShield(RenderLevelStageEvent event, Entity entity, ShieldCapability shield) {
         PoseStack poseStack = event.getPoseStack();
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         
         // 获取相机位置
         Vec3 cameraPos = event.getCamera().getPosition();
         
-        // 使用 partialTick 插值玩家位置，确保护盾平滑跟随玩家移动（修复延迟感）
+        // 使用 partialTick 插值实体位置，确保护盾平滑跟随实体移动（修复延迟感）
         Vec3 shieldCenter = new Vec3(
-            Mth.lerp(partialTick, player.xOld, player.getX()),
-            Mth.lerp(partialTick, player.yOld, player.getY()) + player.getEyeHeight() / 2,
-            Mth.lerp(partialTick, player.zOld, player.getZ())
+            Mth.lerp(partialTick, entity.xOld, entity.getX()),
+            Mth.lerp(partialTick, entity.yOld, entity.getY()) + entity.getEyeHeight() / 2,
+            Mth.lerp(partialTick, entity.zOld, entity.getZ())
         );
         
         // 计算相对位置
@@ -109,7 +111,7 @@ public class AdvancedShieldRenderer {
         int strength = shield.getShieldStrength();
         double radius = shield.getShieldRadius();
         float[] color = getShieldColor(strength);
-        float time = (player.tickCount + partialTick) * 0.05f;
+        float time = (entity.tickCount + partialTick) * 0.05f;
         
         // 更新受击效果
         ShieldImpactEffect.update();
@@ -123,7 +125,7 @@ public class AdvancedShieldRenderer {
         renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter);
         
         // 第3层：受击脉冲圆环（扩散并渐隐）
-        renderImpactRings(poseStack, radius, color, time, shieldCenter);
+        renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
         
         // 第4层：GPU粒子系统
         renderParticleLayer(poseStack, radius * 1.05, color, time);
@@ -238,7 +240,7 @@ public class AdvancedShieldRenderer {
     /**
      * 受击脉冲圆环：在受击点沿球面生成一个随时间扩散并淡出的细环
      */
-    private static void renderImpactRings(PoseStack poseStack, double radius, float[] color, float time, Vec3 shieldCenter) {
+    private static void renderImpactRings(PoseStack poseStack, double radius, float[] color, float time, Vec3 shieldCenter, int entityId) {
         // 渲染设置
         RenderSystem.enableBlend();
         // 加法混合，增强亮度但不增加遮挡
@@ -273,8 +275,8 @@ public class AdvancedShieldRenderer {
         final float FLASH_THICK_SCALE = 0.5f;   // 内环厚度比例
         final float FLASH_ALPHA_BOOST = 1.5f;   // 内环额外亮度
         
-        // 遍历所有活跃受击
-        var impacts = com.chadate.somefunstuff.client.render.ShieldImpactEffect.getActiveImpacts();
+        // 只遍历当前实体的活跃受击
+        var impacts = com.chadate.somefunstuff.client.render.ShieldImpactEffect.getActiveImpactsForEntity(entityId);
         for (var impact : impacts) {
             // 进度与淡出
             float progress = impact.getProgress((long)(System.currentTimeMillis() / 50)); // 0..1

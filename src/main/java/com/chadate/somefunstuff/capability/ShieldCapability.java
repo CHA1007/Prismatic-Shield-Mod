@@ -7,7 +7,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
  * 护盾数据类
  * 使用 Record 和 Codec 来存储护盾状态
  */
-public record ShieldCapability(boolean active, double radius, int strength) implements IShieldCapability {
+public record ShieldCapability(boolean active, double radius, int strength) {
     
     // 默认护盾数据
     public static final ShieldCapability DEFAULT = new ShieldCapability(false, 3.0, 100);
@@ -21,37 +21,30 @@ public record ShieldCapability(boolean active, double radius, int strength) impl
         ).apply(instance, ShieldCapability::new)
     );
     
-    @Override
     public boolean isShieldActive() {
         return active && strength > 0;
     }
     
-    @Override
     public void setShieldActive(boolean active) {
         // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
     }
     
-    @Override
     public double getShieldRadius() {
         return radius;
     }
     
-    @Override
     public void setShieldRadius(double radius) {
         // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
     }
     
-    @Override
     public int getShieldStrength() {
         return strength;
     }
     
-    @Override
     public void setShieldStrength(int strength) {
         // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
     }
     
-    @Override
     public boolean consumeStrength(int amount) {
         // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
         return strength >= amount;
