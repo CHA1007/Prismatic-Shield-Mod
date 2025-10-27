@@ -3,7 +3,6 @@ package com.chadate.somefunstuff.api;
 import com.chadate.somefunstuff.capability.ShieldCapabilities;
 import com.chadate.somefunstuff.capability.ShieldCapability;
 import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.network.PacketDistributor;
 
