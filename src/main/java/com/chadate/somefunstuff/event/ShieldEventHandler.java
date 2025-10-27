@@ -161,14 +161,14 @@ public class ShieldEventHandler {
             }
         }
 
-        // 发送击中效果包到客户端（使用护盾表面交点位置）
+        // 发送击中效果包到客户端（使用护盾表面交点位置和护盾中心）
         if (player instanceof ServerPlayer serverPlayer) {
-            ShieldImpactPacket impactPacket = new ShieldImpactPacket(impactPoint);
+            ShieldImpactPacket impactPacket = new ShieldImpactPacket(impactPoint, shieldCenter);
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, impactPacket);
 
             // 调试日志
-            SomeFunStuff.LOGGER.info("[ShieldImpact] 发送击中效果: {}, 护盾半径: {}",
-                    impactPoint, shieldRadius);
+            SomeFunStuff.LOGGER.info("[ShieldImpact] 发送击中效果: {}, 护盾中心: {}, 护盾半径: {}",
+                    impactPoint, shieldCenter, shieldRadius);
         }
 
         // 添加声音效果（在击中点位置）

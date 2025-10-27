@@ -22,12 +22,17 @@ public class ShieldImpactEffect {
      * 击中点数据结构
      */
     public static class ImpactPoint {
-        public final Vec3 position;      // 击中位置（世界坐标）
-        public final long startTime;     // 开始时间（游戏刻）
-        public float intensity;          // 强度（逐渐衰减）
+        public final Vec3 directionFromCenter;  // 击中点相对于护盾中心的方向向量（单位向量）
+        public final long startTime;            // 开始时间（游戏刻）
+        public float intensity;                 // 强度（逐渐衰减）
         
-        public ImpactPoint(Vec3 position, long startTime) {
-            this.position = position;
+        /**
+         * 创建击中点（存储相对方向而非世界坐标）
+         * @param directionFromCenter 从护盾中心指向击中点的单位方向向量
+         * @param startTime 开始时间
+         */
+        public ImpactPoint(Vec3 directionFromCenter, long startTime) {
+            this.directionFromCenter = directionFromCenter.normalize();
             this.startTime = startTime;
             this.intensity = 1.0f;
         }
@@ -52,14 +57,18 @@ public class ShieldImpactEffect {
      * 注册一个新的击中效果
      * 
      * @param hitPosition 击中位置（世界坐标）
+     * @param shieldCenter 护盾中心（世界坐标）
      */
-    public static void registerImpact(Vec3 hitPosition) {
+    public static void registerImpact(Vec3 hitPosition, Vec3 shieldCenter) {
         long currentTime = System.currentTimeMillis() / 50; // 转换为游戏刻
-        activeImpacts.add(new ImpactPoint(hitPosition, currentTime));
+        
+        // 计算相对方向向量（从护盾中心指向击中点）
+        Vec3 direction = hitPosition.subtract(shieldCenter).normalize();
+        activeImpacts.add(new ImpactPoint(direction, currentTime));
         
         // 调试日志
-        SomeFunStuff.LOGGER.info("[ShieldImpact] 客户端注册击中效果: {}, 当前活跃数: {}", 
-            hitPosition, activeImpacts.size());
+        SomeFunStuff.LOGGER.info("[ShieldImpact] 客户端注册击中效果 - 世界坐标: {}, 相对方向: {}, 活跃数: {}", 
+            hitPosition, direction, activeImpacts.size());
     }
     
     /**
@@ -115,8 +124,11 @@ public class ShieldImpactEffect {
         float maxInfluence = 0.0f;
         
         for (ImpactPoint impact : activeImpacts) {
+            // 使用相对方向向量计算击中点在护盾表面的实际位置
+            Vec3 impactPositionOnShield = shieldCenter.add(impact.directionFromCenter.scale(shieldRadius));
+            
             // 计算距离
-            double distance = position.distanceTo(impact.position);
+            double distance = position.distanceTo(impactPositionOnShield);
             
             // 获取进度
             float progress = impact.getProgress(currentTime);
@@ -149,12 +161,14 @@ public class ShieldImpactEffect {
      * @param position 要检查的位置
      * @return 闪光强度（0.0-1.0）
      */
-    public static float getFlashIntensity(Vec3 position) {
+    public static float getFlashIntensity(Vec3 position, Vec3 shieldCenter, double shieldRadius) {
         long currentTime = System.currentTimeMillis() / 50;
         float maxFlash = 0.0f;
         
         for (ImpactPoint impact : activeImpacts) {
-            double distance = position.distanceTo(impact.position);
+            // 使用相对方向向量计算击中点在护盾表面的实际位置
+            Vec3 impactPositionOnShield = shieldCenter.add(impact.directionFromCenter.scale(shieldRadius));
+            double distance = position.distanceTo(impactPositionOnShield);
             float progress = impact.getProgress(currentTime);
             
             // 击中点附近的强烈闪光（快速衰减）

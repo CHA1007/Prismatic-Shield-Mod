@@ -56,7 +56,7 @@ public class HexagonalShieldMesh {
             // 计算受击影响（冲击波效果）
             Vec3 hexWorldPos = shieldCenter.add(x, y, z);
             float impactInfluence = ShieldImpactEffect.getImpactInfluence(hexWorldPos, shieldCenter, radius);
-            float flashIntensity = ShieldImpactEffect.getFlashIntensity(hexWorldPos);
+            float flashIntensity = ShieldImpactEffect.getFlashIntensity(hexWorldPos, shieldCenter, radius);
             
             // 调试：输出第一个六边形的影响值
             if (i == 0 && impactInfluence > 0.01f) {

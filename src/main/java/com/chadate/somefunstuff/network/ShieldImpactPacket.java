@@ -14,13 +14,14 @@ import static com.chadate.somefunstuff.SomeFunStuff.MODID;
  * 护盾击中效果网络包
  * 从服务端发送到客户端，触发护盾表面的受击视觉效果
  */
-public record ShieldImpactPacket(Vec3 hitPosition) implements CustomPacketPayload {
+public record ShieldImpactPacket(Vec3 hitPosition, Vec3 shieldCenter) implements CustomPacketPayload {
     
     public static final Type<ShieldImpactPacket> TYPE = 
         new Type<>(ResourceLocation.fromNamespaceAndPath(MODID, "shield_impact"));
     
     public static final StreamCodec<ByteBuf, ShieldImpactPacket> STREAM_CODEC = 
         StreamCodec.composite(
+            // 击中位置
             StreamCodec.of(
                 (buf, vec) -> {
                     buf.writeDouble(vec.x);
@@ -30,6 +31,16 @@ public record ShieldImpactPacket(Vec3 hitPosition) implements CustomPacketPayloa
                 buf -> new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble())
             ),
             ShieldImpactPacket::hitPosition,
+            // 护盾中心
+            StreamCodec.of(
+                (buf, vec) -> {
+                    buf.writeDouble(vec.x);
+                    buf.writeDouble(vec.y);
+                    buf.writeDouble(vec.z);
+                },
+                buf -> new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble())
+            ),
+            ShieldImpactPacket::shieldCenter,
             ShieldImpactPacket::new
         );
     
@@ -43,8 +54,8 @@ public record ShieldImpactPacket(Vec3 hitPosition) implements CustomPacketPayloa
      */
     public static void handleClient(ShieldImpactPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
-            // 在客户端注册击中效果
-            ShieldImpactEffect.registerImpact(packet.hitPosition());
+            // 在客户端注册击中效果（传递击中位置和护盾中心）
+            ShieldImpactEffect.registerImpact(packet.hitPosition(), packet.shieldCenter());
         });
     }
 }

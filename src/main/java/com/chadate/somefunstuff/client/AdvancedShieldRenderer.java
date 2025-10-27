@@ -278,8 +278,9 @@ public class AdvancedShieldRenderer {
             float gInner = Math.max(0.0f, g - dg * 0.5f);
             float gOuter = g + dg * 0.5f;
             
-            // 环中心方向（单位向量）
-            Vec3 cVec = impact.position.subtract(shieldCenter).normalize();
+            // 环中心方向（单位向量）- 直接使用存储的相对方向
+            // 这样无论护盾如何移动，扩散环都会保持在护盾表面的相同位置
+            Vec3 cVec = impact.directionFromCenter;
             // 选取参考向量避免与cVec平行
             Vec3 up = Math.abs(cVec.y) > 0.9 ? new Vec3(1,0,0) : new Vec3(0,1,0);
             Vec3 t1v = cVec.cross(up).normalize();
