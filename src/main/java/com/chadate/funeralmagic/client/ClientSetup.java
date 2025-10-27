@@ -1,6 +1,7 @@
-package com.chadate.somefunstuff.client;
+package com.chadate.funeralmagic.client;
 
-import com.chadate.somefunstuff.SomeFunStuff;
+import com.chadate.funeralmagic.SomeFunStuff;
+
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -34,15 +35,15 @@ public class ClientSetup {
 
         // 客户端网络事件：登录/登出时清空受击缓存
         NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingIn e) -> {
-            com.chadate.somefunstuff.client.render.ShieldImpactEffect.clear();
+            com.chadate.funeralmagic.client.render.ShieldImpactEffect.clear();
         });
         NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> {
-            com.chadate.somefunstuff.client.render.ShieldImpactEffect.clear();
+            com.chadate.funeralmagic.client.render.ShieldImpactEffect.clear();
         });
         // 客户端关卡加载（进入世界/切换维度后）清空一次
         NeoForge.EVENT_BUS.addListener((LevelEvent.Load e) -> {
             if (e.getLevel().isClientSide()) {
-                com.chadate.somefunstuff.client.render.ShieldImpactEffect.clear();
+                com.chadate.funeralmagic.client.render.ShieldImpactEffect.clear();
             }
         });
 

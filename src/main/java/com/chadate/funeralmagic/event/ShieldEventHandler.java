@@ -1,10 +1,5 @@
-package com.chadate.somefunstuff.event;
+package com.chadate.funeralmagic.event;
 
-import com.chadate.somefunstuff.SomeFunStuff;
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
-import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
-import com.chadate.somefunstuff.network.ShieldImpactPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -21,6 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import com.chadate.funeralmagic.SomeFunStuff;
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+import com.chadate.funeralmagic.network.ShieldDataSyncPacket;
+import com.chadate.funeralmagic.network.ShieldImpactPacket;
 
 /**
  * 护盾事件处理器

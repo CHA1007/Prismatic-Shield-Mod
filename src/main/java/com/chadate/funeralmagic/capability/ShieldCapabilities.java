@@ -1,12 +1,13 @@
-package com.chadate.somefunstuff.capability;
+package com.chadate.funeralmagic.capability;
 
-import com.chadate.somefunstuff.SomeFunStuff;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import java.util.function.Supplier;
+
+import com.chadate.funeralmagic.SomeFunStuff;
 
 /**
  * 护盾附件类型注册

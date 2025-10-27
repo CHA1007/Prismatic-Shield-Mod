@@ -1,14 +1,15 @@
-package com.chadate.somefunstuff.network;
+package com.chadate.funeralmagic.network;
 
-import com.chadate.somefunstuff.client.render.ShieldImpactEffect;
+import static com.chadate.funeralmagic.SomeFunStuff.MODID;
+
+import com.chadate.funeralmagic.client.render.ShieldImpactEffect;
+
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-
-import static com.chadate.somefunstuff.SomeFunStuff.MODID;
 
 /**
  * 护盾击中效果网络包

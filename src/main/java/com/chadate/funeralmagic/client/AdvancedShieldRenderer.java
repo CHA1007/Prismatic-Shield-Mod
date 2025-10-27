@@ -1,11 +1,11 @@
-package com.chadate.somefunstuff.client;
+package com.chadate.funeralmagic.client;
 
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
-import com.chadate.somefunstuff.client.render.HexagonalShieldMesh;
-import com.chadate.somefunstuff.client.render.ShieldParticleSystem;
-import com.chadate.somefunstuff.client.render.ShieldImpactEffect;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+import com.chadate.funeralmagic.client.render.HexagonalShieldMesh;
+import com.chadate.funeralmagic.client.render.ShieldImpactEffect;
+import com.chadate.funeralmagic.client.render.ShieldParticleSystem;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -271,7 +271,7 @@ public class AdvancedShieldRenderer {
         final float FLASH_ALPHA_BOOST = 2.0f;  // 内环额外亮度（增强闪光效果）
         
         // 只遍历当前实体的活跃受击
-        var impacts = com.chadate.somefunstuff.client.render.ShieldImpactEffect.getActiveImpactsForEntity(entityId);
+        var impacts = com.chadate.funeralmagic.client.render.ShieldImpactEffect.getActiveImpactsForEntity(entityId);
         for (var impact : impacts) {
             // *** 关键修复：每个环形波使用独立的绘制批次，避免环与环之间产生连接线 ***
             BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);

@@ -1,8 +1,9 @@
-package com.chadate.somefunstuff.util;
+package com.chadate.funeralmagic.util;
 
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
-import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+import com.chadate.funeralmagic.network.ShieldDataSyncPacket;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;

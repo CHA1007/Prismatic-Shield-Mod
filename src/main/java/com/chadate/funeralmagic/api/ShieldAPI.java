@@ -1,12 +1,13 @@
-package com.chadate.somefunstuff.api;
+package com.chadate.funeralmagic.api;
 
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
-import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
+
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+import com.chadate.funeralmagic.network.ShieldDataSyncPacket;
 
 /**
  * 护盾系统公开API

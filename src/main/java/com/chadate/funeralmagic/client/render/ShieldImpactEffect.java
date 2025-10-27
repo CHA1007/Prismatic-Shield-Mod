@@ -1,4 +1,4 @@
-package com.chadate.somefunstuff.client.render;
+package com.chadate.funeralmagic.client.render;
 
 import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;

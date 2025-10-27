@@ -16,7 +16,7 @@
       ],
       "vmArgs": [
         "@C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\build\\moddev\\clientRunVmArgs.txt",
-        "-Dfml.modFolders\u003dsomefunstuff%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
+        "-Dfml.modFolders\u003dfuneralmagic%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -38,7 +38,7 @@
       ],
       "vmArgs": [
         "@C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\build\\moddev\\dataRunVmArgs.txt",
-        "-Dfml.modFolders\u003dsomefunstuff%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
+        "-Dfml.modFolders\u003dfuneralmagic%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -60,7 +60,7 @@
       ],
       "vmArgs": [
         "@C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\build\\moddev\\gameTestServerRunVmArgs.txt",
-        "-Dfml.modFolders\u003dsomefunstuff%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
+        "-Dfml.modFolders\u003dfuneralmagic%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -82,7 +82,7 @@
       ],
       "vmArgs": [
         "@C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\build\\moddev\\serverRunVmArgs.txt",
-        "-Dfml.modFolders\u003dsomefunstuff%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
+        "-Dfml.modFolders\u003dfuneralmagic%%C:\\Users\\Administrator\\Documents\\MC文件\\somefunstuff-template-1.21.1\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},

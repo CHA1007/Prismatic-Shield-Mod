@@ -1,6 +1,7 @@
-package com.chadate.somefunstuff.network;
+package com.chadate.funeralmagic.network;
 
-import com.chadate.somefunstuff.SomeFunStuff;
+import com.chadate.funeralmagic.SomeFunStuff;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;

@@ -1,4 +1,4 @@
-package com.chadate.somefunstuff.client.render;
+package com.chadate.funeralmagic.client.render;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.util.Mth;

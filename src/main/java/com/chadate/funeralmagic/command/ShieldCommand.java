@@ -1,9 +1,9 @@
-package com.chadate.somefunstuff.command;
+package com.chadate.funeralmagic.command;
 
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
-import com.chadate.somefunstuff.network.ShieldDataSyncPacket;
-import com.chadate.somefunstuff.util.ShieldManager;
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+import com.chadate.funeralmagic.network.ShieldDataSyncPacket;
+import com.chadate.funeralmagic.util.ShieldManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;

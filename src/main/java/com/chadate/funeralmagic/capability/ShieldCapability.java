@@ -1,4 +1,4 @@
-package com.chadate.somefunstuff.capability;
+package com.chadate.funeralmagic.capability;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

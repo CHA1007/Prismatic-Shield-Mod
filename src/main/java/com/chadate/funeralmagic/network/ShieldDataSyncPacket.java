@@ -1,8 +1,9 @@
-package com.chadate.somefunstuff.network;
+package com.chadate.funeralmagic.network;
 
-import com.chadate.somefunstuff.SomeFunStuff;
-import com.chadate.somefunstuff.capability.ShieldCapabilities;
-import com.chadate.somefunstuff.capability.ShieldCapability;
+import com.chadate.funeralmagic.SomeFunStuff;
+import com.chadate.funeralmagic.capability.ShieldCapabilities;
+import com.chadate.funeralmagic.capability.ShieldCapability;
+
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.ByteBufCodecs;
