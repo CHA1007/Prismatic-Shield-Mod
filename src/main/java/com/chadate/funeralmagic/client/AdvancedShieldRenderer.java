@@ -109,8 +109,8 @@ public class AdvancedShieldRenderer {
         poseStack.translate(relX, relY, relZ);
         
         // 获取护盾参数
-        int strength = shield.getShieldStrength();
-        double radius = shield.getShieldRadius();
+        int strength = shield.strength();
+        double radius = shield.radius();
         float[] color = getShieldColor(strength);
         float time = (entity.tickCount + partialTick) * 0.05f;
         

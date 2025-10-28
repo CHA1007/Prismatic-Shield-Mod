@@ -71,8 +71,8 @@ public class ShieldManager {
         ShieldCapability shield = player.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
         return String.format("护盾状态: %s, 半径: %.1f, 强度: %d",
             shield.isShieldActive() ? "激活" : "未激活",
-            shield.getShieldRadius(),
-            shield.getShieldStrength());
+            shield.radius(),
+            shield.strength());
     }
     
     /**

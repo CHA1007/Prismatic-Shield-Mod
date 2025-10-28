@@ -5,11 +5,28 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 /**
  * 护盾数据类
- * 使用 Record 和 Codec 来存储护盾状态
+ * 使用 Record 实现不可变数据结构，通过 withXxx 方法创建新实例来修改数据
  */
 public record ShieldCapability(boolean active, double radius, int strength) {
     
-    // 默认护盾数据
+    /**
+     * Compact constructor - 在创建实例时进行数据验证
+     */
+    public ShieldCapability {
+        // 验证半径不能为负
+        if (radius < 0) {
+            radius = 0;
+        }
+        // 验证强度不能为负
+        if (strength < 0) {
+            strength = 0;
+        }
+        // 如果强度为 0，自动关闭护盾
+        if (strength == 0 && active) {
+            active = false;
+        }
+    }
+
     public static final ShieldCapability DEFAULT = new ShieldCapability(false, 3.0, 100);
     
     // Codec 用于序列化和反序列化
@@ -21,32 +38,17 @@ public record ShieldCapability(boolean active, double radius, int strength) {
         ).apply(instance, ShieldCapability::new)
     );
     
+    /**
+     * 检查护盾是否真正激活（激活状态且有强度）
+     */
     public boolean isShieldActive() {
         return active && strength > 0;
     }
     
-    public void setShieldActive(boolean active) {
-        // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
-    }
-    
-    public double getShieldRadius() {
-        return radius;
-    }
-    
-    public void setShieldRadius(double radius) {
-        // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
-    }
-    
-    public int getShieldStrength() {
-        return strength;
-    }
-    
-    public void setShieldStrength(int strength) {
-        // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
-    }
-    
-    public boolean consumeStrength(int amount) {
-        // Record 是不可变的，这个方法在 ShieldManager 中会创建新实例
+    /**
+     * 检查是否有足够的强度可以消耗
+     */
+    public boolean canConsumeStrength(int amount) {
         return strength >= amount;
     }
     
@@ -61,28 +63,32 @@ public record ShieldCapability(boolean active, double radius, int strength) {
      * 创建一个半径改变的新实例
      */
     public ShieldCapability withRadius(double newRadius) {
-        return new ShieldCapability(this.active, Math.max(0, newRadius), this.strength);
+        return new ShieldCapability(this.active, newRadius, this.strength);
     }
     
     /**
      * 创建一个强度改变的新实例
      */
     public ShieldCapability withStrength(int newStrength) {
-        int validStrength = Math.max(0, newStrength);
-        // 保持原有的激活状态，只有强度为 0 时才强制关闭
-        boolean newActive = validStrength > 0 ? this.active : false;
-        return new ShieldCapability(newActive, this.radius, validStrength);
+        return new ShieldCapability(this.active, this.radius, newStrength);
     }
     
     /**
      * 消耗强度并返回新实例
+     * @param amount 要消耗的强度值
+     * @return 如果强度足够，返回消耗后的新实例；否则返回当前实例
      */
-    public ShieldCapability withConsumedStrength(int amount) {
+    public ShieldCapability consumeStrength(int amount) {
         if (strength >= amount) {
-            int newStrength = strength - amount;
-            boolean newActive = newStrength > 0 && this.active;
-            return new ShieldCapability(newActive, this.radius, newStrength);
+            return new ShieldCapability(this.active, this.radius, strength - amount);
         }
         return this;
+    }
+    
+    /**
+     * 增加强度并返回新实例
+     */
+    public ShieldCapability addStrength(int amount) {
+        return new ShieldCapability(this.active, this.radius, strength + amount);
     }
 }

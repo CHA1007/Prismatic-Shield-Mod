@@ -65,8 +65,8 @@ public class ShieldEventHandler {
                 ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
                         entity.getId(),
                         shield.isShieldActive(),
-                        shield.getShieldRadius(),
-                        shield.getShieldStrength());
+                        shield.radius(),
+                        shield.strength());
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
             }
         }
@@ -90,8 +90,8 @@ public class ShieldEventHandler {
                 ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
                         entity.getId(),
                         shield.isShieldActive(),
-                        shield.getShieldRadius(),
-                        shield.getShieldStrength());
+                        shield.radius(),
+                        shield.strength());
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
             }
         }
@@ -172,7 +172,7 @@ public class ShieldEventHandler {
             }
 
             Vec3 shieldCenter = entity.position().add(0, entity.getEyeHeight() / 2, 0);
-            double radius = shield.getShieldRadius();
+            double radius = shield.radius();
 
             // 检查弹射物是否会与该护盾相交
             if (willProjectileHitShield(projectile, projectilePos, velocity, shieldCenter, radius)) {
@@ -308,7 +308,7 @@ public class ShieldEventHandler {
         Vec3 deflectDirection = projectilePos.subtract(shieldCenter).normalize();
 
         // 计算弹射物与护盾表面的交点（准确的击中位置）
-        double shieldRadius = shieldCap.getShieldRadius();
+        double shieldRadius = shieldCap.radius();
         Vec3 impactPoint = shieldCenter.add(deflectDirection.scale(shieldRadius));
 
         // 设置弹射物的新速度（反射）
@@ -322,8 +322,8 @@ public class ShieldEventHandler {
         }
 
         // 消耗护盾强度
-        if (shieldCap.consumeStrength(1)) {
-            ShieldCapability newShield = shieldCap.withConsumedStrength(1);
+        if (shieldCap.canConsumeStrength(1)) {
+            ShieldCapability newShield = shieldCap.consumeStrength(1);
             entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
 
             // 同步到所有客户端

@@ -81,7 +81,7 @@ public class ShieldAPI {
         if (shield == null) {
             return null;
         }
-        return new ShieldInfo(shield.isShieldActive(), shield.getShieldRadius(), shield.getShieldStrength());
+        return new ShieldInfo(shield.isShieldActive(), shield.radius(), shield.strength());
     }
 
     /**
@@ -256,8 +256,8 @@ public class ShieldAPI {
         }
         
         try {
-            if (shield.consumeStrength(amount)) {
-                ShieldCapability newShield = shield.withConsumedStrength(amount);
+            if (shield.canConsumeStrength(amount)) {
+                ShieldCapability newShield = shield.consumeStrength(amount);
                 entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
                 syncToAllPlayers(entity, newShield);
                 return true;
@@ -286,7 +286,7 @@ public class ShieldAPI {
         }
         
         try {
-            int newStrength = Math.min(10000, shield.getShieldStrength() + amount); // 上限10000
+            int newStrength = Math.min(10000, shield.strength() + amount); // 上限10000
             ShieldCapability newShield = shield.withStrength(newStrength);
             entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
             syncToAllPlayers(entity, newShield);
@@ -328,7 +328,7 @@ public class ShieldAPI {
             return 0.0;
         }
         ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
-        return shield != null ? shield.getShieldRadius() : 0.0;
+        return shield != null ? shield.radius() : 0.0;
     }
 
     /**
@@ -342,7 +342,7 @@ public class ShieldAPI {
             return 0;
         }
         ShieldCapability shield = entity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
-        return shield != null ? shield.getShieldStrength() : 0;
+        return shield != null ? shield.strength() : 0;
     }
 
     /**

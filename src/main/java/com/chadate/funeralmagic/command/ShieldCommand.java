@@ -135,8 +135,8 @@ public class ShieldCommand {
                     // 关闭护盾
                     ShieldCapability newShield = new ShieldCapability(
                         false, 
-                        currentShield.getShieldRadius(), 
-                        currentShield.getShieldStrength()
+                        currentShield.radius(), 
+                        currentShield.strength()
                     );
                     entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
                     
@@ -144,8 +144,8 @@ public class ShieldCommand {
                     ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
                         entity.getId(),
                         false, 
-                        currentShield.getShieldRadius(), 
-                        currentShield.getShieldStrength()
+                        currentShield.radius(), 
+                        currentShield.strength()
                     );
                     PacketDistributor.sendToAllPlayers(packet);
                     
