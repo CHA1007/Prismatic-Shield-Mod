@@ -14,7 +14,7 @@ import net.neoforged.neoforge.common.NeoForge;
 @Mod(SomeFunStuff.MODID)
 public class SomeFunStuff {
 
-    public static final String MODID = "funeralmagic";
+    public static final String MODID = "prismaticshield";
 
     public static final Logger LOGGER = LogUtils.getLogger();
 

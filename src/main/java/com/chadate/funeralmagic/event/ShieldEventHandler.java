@@ -99,6 +99,37 @@ public class ShieldEventHandler {
     }
 
     /**
+     * 玩家开始追踪实体时同步护盾数据到客户端
+     * 这是最关键的同步点：当实体进入玩家视野范围时，立即同步护盾状态
+     * 解决重新进入世界或维度时护盾不可见的问题
+     */
+    @SubscribeEvent
+    public static void onStartTracking(PlayerEvent.StartTracking event) {
+        // 只在服务端处理
+        if (!(event.getEntity() instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+
+        // 获取被追踪的实体
+        Entity trackedEntity = event.getTarget();
+        if (trackedEntity == null) {
+            return;
+        }
+
+        // 检查被追踪的实体是否有激活的护盾
+        ShieldCapability shield = trackedEntity.getData(ShieldCapabilities.SHIELD_ATTACHMENT);
+        if (shield != null && shield.isShieldActive()) {
+            // 向开始追踪该实体的玩家发送护盾数据
+            ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
+                    trackedEntity.getId(),
+                    shield.isShieldActive(),
+                    shield.radius(),
+                    shield.strength());
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(serverPlayer, packet);
+        }
+    }
+
+    /**
      * 监听弹射物自身的Tick事件
      */
     @SubscribeEvent
