@@ -46,7 +46,7 @@ public class AdvancedShieldRenderer {
     private static final float PARTICLE_LAYER_ALPHA_MULTIPLIER = 0.5f;
     
     /** 外层光晕透明度倍率 */
-    private static final float GLOW_LAYER_ALPHA_MULTIPLIER = 0.25f;  // 降低到25%
+    private static final float GLOW_LAYER_ALPHA_MULTIPLIER = 0.25f;
     
     /**
      * 注册渲染事件
