@@ -21,7 +21,7 @@ public class HexagonalShieldMesh {
 
        public static void renderHexagonalShield(VertexConsumer consumer, Matrix4f matrix,
                      double radius, float r, float g, float b,
-                     float alpha, float time, Vec3 shieldCenter) {
+                     float alpha, float time, Vec3 shieldCenter, int entityId) {
 
               GeodesicSphere sphere = new GeodesicSphere((float) radius, subdivisionLevel);
 
@@ -41,7 +41,7 @@ public class HexagonalShieldMesh {
                      float impactInfluence = ShieldImpactEffect.getImpactInfluence(
                                    shieldCenter.add(midPoint), shieldCenter, radius);
                      float flashIntensity = ShieldImpactEffect.getFlashIntensity(
-                                   shieldCenter.add(midPoint), shieldCenter, radius);
+                                   entityId, shieldCenter.add(midPoint), shieldCenter, radius);
 
                      float brightness = 1.0f + energyFlow * 0.5f + impactInfluence * 5.0f + flashIntensity * 8.0f;
                      float lineAlpha = alpha * (0.6f + energyFlow * 0.4f + impactInfluence * 2.0f);

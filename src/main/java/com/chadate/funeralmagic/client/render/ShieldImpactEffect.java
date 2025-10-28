@@ -139,16 +139,23 @@ public class ShieldImpactEffect {
     /**
      * 获取击中点闪光效果强度
      * 
+     * @param entityId     实体ID（用于过滤只属于该实体的击中效果）
      * @param position     要检查的位置
      * @param shieldCenter 护盾中心
      * @param shieldRadius 护盾半径
      * @return 闪光强度（0.0-1.0）
      */
-    public static float getFlashIntensity(Vec3 position, Vec3 shieldCenter, double shieldRadius) {
+    public static float getFlashIntensity(int entityId, Vec3 position, Vec3 shieldCenter, double shieldRadius) {
         long currentTime = System.currentTimeMillis() / 50;
         float maxFlash = 0.0f;
 
+        // 只遍历属于该实体的击中效果，避免闪光效果在所有护盾上同步显示
         for (ImpactPoint impact : activeImpacts) {
+            // 过滤：只处理属于当前实体的击中点
+            if (impact.entityId != entityId) {
+                continue;
+            }
+            
             // 使用相对方向向量计算击中点在护盾表面的实际位置
             Vec3 impactPositionOnShield = shieldCenter.add(impact.directionFromCenter.scale(shieldRadius));
             double distance = position.distanceTo(impactPositionOnShield);

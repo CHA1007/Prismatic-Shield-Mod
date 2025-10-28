@@ -132,7 +132,7 @@ public class AdvancedShieldRenderer {
         renderInnerEnergyField(poseStack, radius * 0.97, color, time);
         
         // 第2层：六边形蜂巢网格
-        renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter);
+        renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter, entity.getId());
         
         // 第3层：受击脉冲圆环
         renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
@@ -214,7 +214,7 @@ public class AdvancedShieldRenderer {
     /**
      * 第2层：六边形蜂巢网格
      */
-    private static void renderHexagonalLayer(PoseStack poseStack, double radius, float[] color, float time, int strength, Vec3 shieldCenter) {
+    private static void renderHexagonalLayer(PoseStack poseStack, double radius, float[] color, float time, int strength, Vec3 shieldCenter, int entityId) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
@@ -231,9 +231,9 @@ public class AdvancedShieldRenderer {
         // 统一透明度（不再根据强度变化）
         float hexAlpha = 0.6f * HEX_LAYER_ALPHA_MULTIPLIER;
         
-        // 渲染六边形网格（传递护盾中心用于受击效果）
+        // 渲染六边形网格（传递护盾中心和实体ID用于受击效果）
         HexagonalShieldMesh.renderHexagonalShield(buffer, matrix, radius, 
-            color[0], color[1], color[2], hexAlpha, time, shieldCenter);
+            color[0], color[1], color[2], hexAlpha, time, shieldCenter, entityId);
         
         BufferUploader.drawWithShader(buffer.buildOrThrow());
         
