@@ -15,16 +15,16 @@ public class ShieldImpactEffect {
     private static final List<ImpactPoint> activeImpacts = new ArrayList<>();
 
     // 击中效果持续时间（游戏刻）
-    private static final int IMPACT_DURATION = 40; // 2秒
+    private static final int IMPACT_DURATION = 20; 
 
     /**
      * 击中点数据结构
      */
     public static class ImpactPoint {
-        public final int entityId; // 实体ID（用于区分不同实体的护盾）
-        public final Vec3 directionFromCenter; // 击中点相对于护盾中心的方向向量（单位向量）
-        public final long startTime; // 开始时间（游戏刻）
-        public float intensity; // 强度（逐渐衰减）
+        public final int entityId; // 实体ID
+        public final Vec3 directionFromCenter; // 击中点相对于护盾中心的方向向量
+        public final long startTime; // 开始时间
+        public float intensity; // 强度
 
         /**
          * 创建击中点（存储相对方向而非世界坐标）
@@ -41,7 +41,7 @@ public class ShieldImpactEffect {
         }
 
         /**
-         * 获取击中效果的归一化时间进度（0.0-1.0）
+         * 获取击中效果的归一化时间进度
          */
         public float getProgress(long currentTime) {
             long elapsed = currentTime - startTime;
