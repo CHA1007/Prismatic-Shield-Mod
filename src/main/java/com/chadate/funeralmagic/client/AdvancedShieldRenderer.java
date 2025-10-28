@@ -18,6 +18,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import java.util.List;
 
 /**
  * 顶级护盾渲染器 - 多层渲染系统
@@ -134,7 +135,7 @@ public class AdvancedShieldRenderer {
         renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter);
         
         // 第3层：受击脉冲圆环
-        // renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
+        renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
         
         // 第4层：GPU粒子系统
         renderParticleLayer(poseStack, radius * 1.02, color, time);
@@ -227,10 +228,8 @@ public class AdvancedShieldRenderer {
         
         Matrix4f matrix = poseStack.last().pose();
         
-        // 护盾强度影响透明度
-        float baseAlpha = 0.6f * (strength / 100.0f);
-        // 应用六边形层透明度控制
-        float hexAlpha = baseAlpha * HEX_LAYER_ALPHA_MULTIPLIER;
+        // 统一透明度（不再根据强度变化）
+        float hexAlpha = 0.6f * HEX_LAYER_ALPHA_MULTIPLIER;
         
         // 渲染六边形网格（传递护盾中心用于受击效果）
         HexagonalShieldMesh.renderHexagonalShield(buffer, matrix, radius, 
@@ -385,6 +384,124 @@ public class AdvancedShieldRenderer {
         RenderSystem.depthMask(true);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
+    }
+    
+    /**
+     * 第3层：受击冲击环效果
+     * 从击中点沿球面向外扩散的能量环
+     */
+    private static void renderImpactRings(PoseStack poseStack, double radius, float[] color, float time, Vec3 shieldCenter, int entityId) {
+        List<ShieldImpactEffect.ImpactPoint> impacts = ShieldImpactEffect.getActiveImpactsForEntity(entityId);
+        if (impacts.isEmpty()) {
+            return;
+        }
+        
+        RenderSystem.enableBlend();
+        // 使用加法混合让冲击环更明显
+        RenderSystem.blendFunc(org.lwjgl.opengl.GL11.GL_SRC_ALPHA, org.lwjgl.opengl.GL11.GL_ONE);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515);
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        Matrix4f matrix = poseStack.last().pose();
+        
+        long currentTime = System.currentTimeMillis() / 50;
+        
+        // 为每个击中点渲染冲击环
+        for (ShieldImpactEffect.ImpactPoint impact : impacts) {
+            float progress = impact.getProgress(currentTime);
+            
+            // 冲击环参数（减小扩散范围）
+            float ringAngle = (float)(progress * Math.PI * 0.25); // 最大扩散角度45度（原来更大）
+            float ringThickness = 0.05f * (1.0f - progress * 0.5f); // 环厚度（角度单位）
+            float ringAlpha = (1.0f - progress) * 0.9f; // 透明度衰减
+            
+            // 使用击中方向作为中心方向
+            Vec3 centerDir = impact.directionFromCenter;
+            
+            // 创建两个垂直于中心方向的正交基向量
+            Vec3 tangent1 = getTangent(centerDir);
+            Vec3 tangent2 = centerDir.cross(tangent1).normalize();
+            
+            // 渲染球面圆环（使用三角形条带）
+            int segments = 32;
+            for (int i = 0; i < segments; i++) {
+                float azimuth1 = (float)(i * 2 * Math.PI / segments);
+                float azimuth2 = (float)((i + 1) * 2 * Math.PI / segments);
+                
+                // 内圈和外圈的四个顶点（球面坐标）
+                Vec3 inner1 = getSphericalPoint(centerDir, tangent1, tangent2, radius, ringAngle - ringThickness, azimuth1);
+                Vec3 outer1 = getSphericalPoint(centerDir, tangent1, tangent2, radius, ringAngle + ringThickness, azimuth1);
+                Vec3 inner2 = getSphericalPoint(centerDir, tangent1, tangent2, radius, ringAngle - ringThickness, azimuth2);
+                Vec3 outer2 = getSphericalPoint(centerDir, tangent1, tangent2, radius, ringAngle + ringThickness, azimuth2);
+                
+                // 颜色：中心更亮，边缘更暗
+                float centerBrightness = 1.8f;
+                float edgeBrightness = 1.0f;
+                
+                // 第一个三角形 (inner1, outer1, inner2)
+                buffer.addVertex(matrix, (float)inner1.x, (float)inner1.y, (float)inner1.z)
+                      .setColor(color[0] * centerBrightness, color[1] * centerBrightness, color[2] * centerBrightness, ringAlpha);
+                buffer.addVertex(matrix, (float)outer1.x, (float)outer1.y, (float)outer1.z)
+                      .setColor(color[0] * edgeBrightness, color[1] * edgeBrightness, color[2] * edgeBrightness, ringAlpha * 0.6f);
+                buffer.addVertex(matrix, (float)inner2.x, (float)inner2.y, (float)inner2.z)
+                      .setColor(color[0] * centerBrightness, color[1] * centerBrightness, color[2] * centerBrightness, ringAlpha);
+                
+                // 第二个三角形 (inner2, outer1, outer2)
+                buffer.addVertex(matrix, (float)inner2.x, (float)inner2.y, (float)inner2.z)
+                      .setColor(color[0] * centerBrightness, color[1] * centerBrightness, color[2] * centerBrightness, ringAlpha);
+                buffer.addVertex(matrix, (float)outer1.x, (float)outer1.y, (float)outer1.z)
+                      .setColor(color[0] * edgeBrightness, color[1] * edgeBrightness, color[2] * edgeBrightness, ringAlpha * 0.6f);
+                buffer.addVertex(matrix, (float)outer2.x, (float)outer2.y, (float)outer2.z)
+                      .setColor(color[0] * edgeBrightness, color[1] * edgeBrightness, color[2] * edgeBrightness, ringAlpha * 0.6f);
+            }
+        }
+        
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
+        
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
+    }
+    
+    /**
+     * 获取垂直于给定向量的切向量
+     */
+    private static Vec3 getTangent(Vec3 normal) {
+        // 选择一个不平行于法向量的向量
+        Vec3 arbitrary = Math.abs(normal.y) < 0.9 ? new Vec3(0, 1, 0) : new Vec3(1, 0, 0);
+        return normal.cross(arbitrary).normalize();
+    }
+    
+    /**
+     * 在球面上获取一个点（使用球面坐标系统）
+     * @param centerDir 中心方向（击中点方向）
+     * @param tangent1 第一个切向量
+     * @param tangent2 第二个切向量
+     * @param sphereRadius 球面半径
+     * @param polarAngle 极角（从中心方向的偏离角度）
+     * @param azimuthAngle 方位角（围绕中心方向的旋转角度）
+     * @return 球面上的点坐标
+     */
+    private static Vec3 getSphericalPoint(Vec3 centerDir, Vec3 tangent1, Vec3 tangent2, double sphereRadius, float polarAngle, float azimuthAngle) {
+        // 在局部坐标系中计算偏移方向
+        double x = Math.sin(polarAngle) * Math.cos(azimuthAngle);
+        double y = Math.sin(polarAngle) * Math.sin(azimuthAngle);
+        double z = Math.cos(polarAngle);
+        
+        // 组合三个基向量得到最终方向
+        Vec3 direction = tangent1.scale(x)
+                        .add(tangent2.scale(y))
+                        .add(centerDir.scale(z))
+                        .normalize();
+        
+        // 返回球面上的点
+        return direction.scale(sphereRadius);
     }
     
     /**
