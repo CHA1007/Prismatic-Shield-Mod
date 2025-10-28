@@ -196,7 +196,7 @@ public class HexagonalShieldMesh {
        }
 
        /**
-        * 渲染线条（护盾网格的边）
+        * 渲染线条
         */
        private static void renderLine(VertexConsumer consumer, Matrix4f matrix,
                      Vec3 start, Vec3 end, float r, float g, float b, float alpha) {

@@ -15,7 +15,7 @@ public class ShieldImpactEffect {
     private static final List<ImpactPoint> activeImpacts = new ArrayList<>();
 
     // 击中效果持续时间（游戏刻）
-    private static final int IMPACT_DURATION = 20; 
+    private static final int IMPACT_DURATION = 40; 
 
     /**
      * 击中点数据结构
@@ -124,53 +124,24 @@ public class ShieldImpactEffect {
     }
 
     /**
-     * 计算某个位置受击中效果的影响强度
+     * 获取击中点对位置的影响强度（已禁用冲击波效果）
      * 
      * @param position     要检查的位置
      * @param shieldCenter 护盾中心
      * @param shieldRadius 护盾半径
-     * @return 影响强度（0.0-1.0）
+     * @return 影响强度（总是返回0，冲击波已禁用）
      */
     public static float getImpactInfluence(Vec3 position, Vec3 shieldCenter, double shieldRadius) {
-        long currentTime = System.currentTimeMillis() / 50;
-        float maxInfluence = 0.0f;
-
-        for (ImpactPoint impact : activeImpacts) {
-            // 使用相对方向向量计算击中点在护盾表面的实际位置
-            Vec3 impactPositionOnShield = shieldCenter.add(impact.directionFromCenter.scale(shieldRadius));
-
-            // 计算距离
-            double distance = position.distanceTo(impactPositionOnShield);
-
-            // 获取进度
-            float progress = impact.getProgress(currentTime);
-
-            // 冲击波半径（从0扩散到护盾半径）
-            double waveRadius = progress * shieldRadius * 0.8;
-
-            // 冲击波厚度
-            double waveThickness = shieldRadius * 0.15;
-
-            // 判断是否在冲击波范围内
-            double distanceToWave = Math.abs(distance - waveRadius);
-
-            if (distanceToWave < waveThickness) {
-                // 计算影响强度
-                float waveFalloff = 1.0f - (float) (distanceToWave / waveThickness);
-                float timeDecay = 1.0f - progress; // 随时间衰减
-                float influence = waveFalloff * timeDecay * impact.intensity;
-
-                maxInfluence = Math.max(maxInfluence, influence);
-            }
-        }
-
-        return maxInfluence;
+        // 冲击波效果已禁用，只保留闪光特效
+        return 0.0f;
     }
 
     /**
      * 获取击中点闪光效果强度
      * 
-     * @param position 要检查的位置
+     * @param position     要检查的位置
+     * @param shieldCenter 护盾中心
+     * @param shieldRadius 护盾半径
      * @return 闪光强度（0.0-1.0）
      */
     public static float getFlashIntensity(Vec3 position, Vec3 shieldCenter, double shieldRadius) {

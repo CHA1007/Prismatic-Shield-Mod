@@ -18,28 +18,21 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Collection;
 
-/**
- * 护盾命令
- * 提供游戏内命令来控制护盾
- */
 public class ShieldCommand {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("shield")
-            .requires(source -> source.hasPermission(2)) // 需要管理员权限
-            // 给实体添加护盾（简化版，支持默认值）
+            .requires(source -> source.hasPermission(2))
             .then(Commands.literal("give")
                 .then(Commands.argument("targets", EntityArgument.entities())
-                    .executes(ShieldCommand::giveShieldDefault) // 默认值：半径3.0，强度100
+                    .executes(ShieldCommand::giveShieldDefault)
                     .then(Commands.argument("radius", DoubleArgumentType.doubleArg(0.5, 20.0))
-                        .executes(ShieldCommand::giveShieldWithRadius) // 自定义半径，强度100
+                        .executes(ShieldCommand::giveShieldWithRadius) 
                         .then(Commands.argument("strength", IntegerArgumentType.integer(1, 10000))
-                            .executes(ShieldCommand::giveShield))))) // 完全自定义
-            // 移除实体护盾
+                            .executes(ShieldCommand::giveShield)))))
             .then(Commands.literal("remove")
                 .then(Commands.argument("targets", EntityArgument.entities())
                     .executes(ShieldCommand::removeShield)))
-            // 自己的护盾控制（简化为一个命令）
             .then(Commands.literal("toggle")
                 .executes(ShieldCommand::toggleShield))
         );

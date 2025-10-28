@@ -99,8 +99,7 @@ public class ShieldEventHandler {
     }
 
     /**
-     * 监听弹射物自身的Tick事件（在它移动之前）
-     * 这是最可靠的拦截时机
+     * 监听弹射物自身的Tick事件
      */
     @SubscribeEvent
     public static void onProjectileTick(EntityTickEvent.Pre event) {
@@ -302,16 +301,16 @@ public class ShieldEventHandler {
      * 支持所有实体类型
      */
     private static void deflectProjectile(Projectile projectile, Entity entity, ShieldCapability shieldCap) {
-        // 计算反射方向（从实体到弹射物的方向）
+        // 计算反射方向
         Vec3 shieldCenter = entity.position().add(0, entity.getEyeHeight() / 2, 0);
         Vec3 projectilePos = projectile.position();
         Vec3 deflectDirection = projectilePos.subtract(shieldCenter).normalize();
 
-        // 计算弹射物与护盾表面的交点（准确的击中位置）
+        // 计算弹射物与护盾表面的交点
         double shieldRadius = shieldCap.radius();
         Vec3 impactPoint = shieldCenter.add(deflectDirection.scale(shieldRadius));
 
-        // 设置弹射物的新速度（反射）
+        // 设置弹射物的新速度
         double speed = projectile.getDeltaMovement().length();
         Vec3 newVelocity = deflectDirection.scale(speed * 0.8);
         projectile.setDeltaMovement(newVelocity);
@@ -335,7 +334,7 @@ public class ShieldEventHandler {
             net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(packet);
         }
 
-        // 发送击中效果包到所有玩家（包含实体ID）
+        // 发送击中效果包到所有玩家
         ShieldImpactPacket impactPacket = new ShieldImpactPacket(entity.getId(), impactPoint, shieldCenter);
         net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(impactPacket);
 
@@ -348,7 +347,7 @@ public class ShieldEventHandler {
                 SoundEvents.RESPAWN_ANCHOR_DEPLETE, // 音效：能量护盾被击中的声音
                 SoundSource.BLOCKS, // 音效类型
                 0.8f, // 音量
-                1.2f + (float) (Math.random() * 0.2f) // 音调（随机变化，更有动态感）
+                1.2f + (float) (Math.random() * 0.2f) // 音调（随机变化）
         );
 
     }

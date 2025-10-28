@@ -120,19 +120,19 @@ public class AdvancedShieldRenderer {
         // === 多层渲染 ===
         
         // 第1层：内层能量场（半透明球体，菲涅尔效果）
-        renderInnerEnergyField(poseStack, radius * 0.95, color, time);
+        renderInnerEnergyField(poseStack, radius * 0.97, color, time);
         
         // 第2层：六边形蜂巢网格（带受击效果）
         renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter);
         
-        // 第3层：受击脉冲圆环（扩散并渐隐）
-        renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
+        // 第3层：受击脉冲圆环（已禁用）
+        // renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
         
         // 第4层：GPU粒子系统
-        renderParticleLayer(poseStack, radius * 1.05, color, time);
+        renderParticleLayer(poseStack, radius * 1.02, color, time);
         
         // 第5层：外层光晕
-        renderOuterGlow(poseStack, radius * 1.1, color, time);
+        renderOuterGlow(poseStack, radius * 1.05, color, time);
         
         poseStack.popPose();
     }
