@@ -371,19 +371,11 @@ public class AdvancedShieldRenderer {
     }
     
     /**
-     * 根据护盾强度返回颜色
+     * 获取护盾颜色（统一使用青蓝色）
      */
     private static float[] getShieldColor(int strength) {
-        if (strength > 50) {
-            // 强力护盾：柔和青蓝色（降低饱和度）
-            return new float[]{0.15f, 0.4f, 0.6f};
-        } else if (strength > 20) {
-            // 中等护盾：柔和紫色（降低饱和度）
-            return new float[]{0.5f, 0.2f, 0.6f};
-        } else {
-            // 弱化护盾：柔和橙红色（降低饱和度）
-            return new float[]{0.6f, 0.2f, 0.15f};
-        }
+        // 所有护盾统一使用柔和青蓝色
+        return new float[]{0.15f, 0.4f, 0.6f};
     }
     
     /**
