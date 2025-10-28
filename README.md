@@ -28,8 +28,3 @@ A shield system mod for Minecraft 1.21.1 (NeoForge) that adds stunning energy sh
 /shield remove @s
 ```
 
-**Strength Colors**: 75+ Blue, 50-74 Cyan, 25-49 Green, <25 Yellow
-
----
-
-**Tech Stack**: Minecraft 1.21.1 | NeoForge | Java 21
