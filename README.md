@@ -1,25 +1,35 @@
+# Prismatic Shield Mod
 
-Installation information
-=======
+A shield system mod for Minecraft 1.21.1 (NeoForge) that adds stunning energy shields and projectile defense capabilities to entities.
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+## Features
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+- Add visual shields to any entity (players, mobs, etc.)
+- Multi-layer rendering: hexagonal grid, energy field, particle system, impact flash, shatter animation
+- Automatically intercepts and deflects projectiles (arrows, fireballs, etc.)
+- Real-time shield state synchronization across all clients
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+## Commands
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+### Basic Syntax
+```
+/shield <add|remove> <entity_selector> [radius] [strength]
+```
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+### Usage Examples
+```bash
+# Add shield to yourself (radius 3.0, strength 100)
+/shield add @s 3.0 100
+
+# Add shields to nearby mobs
+/shield add @e[type=!minecraft:player,distance=..10] 2.5 50
+
+# Remove shield
+/shield remove @s
+```
+
+**Strength Colors**: 75+ Blue, 50-74 Cyan, 25-49 Green, <25 Yellow
+
+---
+
+**Tech Stack**: Minecraft 1.21.1 | NeoForge | Java 21
