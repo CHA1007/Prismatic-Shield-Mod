@@ -185,12 +185,8 @@ public class AdvancedShieldRenderer {
                 Vector3f v3 = sphereVertex(radius, theta2, phi2);
                 Vector3f v4 = sphereVertex(radius, theta2, phi1);
                 
-                // 脉动效果
-                float pulse = (Mth.sin(time) + 1.0f) * 0.1f + 0.4f;
-                // 应用内层透明度控制
-                float finalAlpha = pulse * INNER_LAYER_ALPHA_MULTIPLIER;
+                float finalAlpha = 0.5f * INNER_LAYER_ALPHA_MULTIPLIER;
                 
-                // 三角形1（反转顶点顺序：v1->v3->v2，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
                 buffer.addVertex(matrix, v3.x, v3.y, v3.z)
@@ -198,7 +194,6 @@ public class AdvancedShieldRenderer {
                 buffer.addVertex(matrix, v2.x, v2.y, v2.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
                 
-                // 三角形2（反转顶点顺序：v1->v4->v3，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
                       .setColor(color[0], color[1], color[2], finalAlpha);
                 buffer.addVertex(matrix, v4.x, v4.y, v4.z)
@@ -309,30 +304,11 @@ public class AdvancedShieldRenderer {
                 Vector3f v3 = sphereVertex(radius, theta2, phi2);
                 Vector3f v4 = sphereVertex(radius, theta2, phi1);
                 
-                // === 多重动态效果 ===
+                // 统一光晕效果（不再动态变化）
+                float finalGlowAlpha = 0.3f * GLOW_LAYER_ALPHA_MULTIPLIER;
                 
-                // 1. 基础脉动（整体呼吸）
-                float basePulse = (Mth.sin(time * 1.5f) + 1.0f) * 0.5f;
-                
-                // 2. 从顶部到底部的波纹流动
-                float waveFlow = Mth.sin(time * 2.0f + (float)theta1 * 3.0f);
-                float waveAlpha = (waveFlow + 1.0f) * 0.15f;
-                
-                // 3. 旋转流光效果（围绕护盾旋转）
-                float rotatingGlow = Mth.sin(time * 3.0f + (float)phi1 * 2.0f);
-                float rotateAlpha = (rotatingGlow + 1.0f) * 0.1f;
-                
-                // 4. 高频闪烁（增加细节）
-                float shimmer = Mth.sin(time * 8.0f + (float)(theta1 + phi1)) * 0.05f;
-                
-                // 组合所有效果
-                float glowPulse = (basePulse * 0.4f + waveAlpha + rotateAlpha + shimmer) * 0.5f;
-                // 应用外层光晕透明度控制
-                float finalGlowAlpha = glowPulse * GLOW_LAYER_ALPHA_MULTIPLIER;
-                
-                // 颜色强度随位置变化（顶部和底部更亮）
-                float heightFactor = Math.abs(Mth.cos((float)theta1));
-                float colorBoost = 1.3f + heightFactor * 0.5f;
+                // 统一颜色强度
+                float colorBoost = 1.3f;
                 
                 // 三角形1（反转顶点顺序：v1->v3->v2，让正面朝外）
                 buffer.addVertex(matrix, v1.x, v1.y, v1.z)
@@ -371,10 +347,9 @@ public class AdvancedShieldRenderer {
     }
     
     /**
-     * 获取护盾颜色（统一使用青蓝色）
+     * 获取护盾颜色
      */
     private static float[] getShieldColor(int strength) {
-        // 所有护盾统一使用柔和青蓝色
         return new float[]{0.15f, 0.4f, 0.6f};
     }
     
