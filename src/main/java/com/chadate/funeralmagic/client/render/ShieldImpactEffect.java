@@ -64,12 +64,13 @@ public class ShieldImpactEffect {
      * @param shieldCenter 护盾中心（世界坐标）
      */
     public static void registerImpact(int entityId, Vec3 hitPosition, Vec3 shieldCenter) {
-        long currentTime = System.currentTimeMillis() / 50; // 转换为游戏刻
+        long currentTime = System.currentTimeMillis() / 50;
 
-        // 计算相对方向向量（从护盾中心指向击中点）
+        // 计算相对方向向量
         Vec3 direction = hitPosition.subtract(shieldCenter).normalize();
         activeImpacts.add(new ImpactPoint(entityId, direction, currentTime));
-
+        
+        System.out.println("[ShieldImpact] 注册击中效果 - 实体: " + entityId + ", 当前活跃数: " + activeImpacts.size());
     }
 
     /**
@@ -154,11 +155,13 @@ public class ShieldImpactEffect {
             double distance = position.distanceTo(impactPositionOnShield);
             float progress = impact.getProgress(currentTime);
 
-            // 击中点附近的强烈闪光（快速衰减）
-            if (distance < 0.5) {
-                float flashIntensity = (1.0f - progress * 3.0f); // 快速衰减
+            // 击中点附近的强烈闪光（增大范围和强度）
+            if (distance < 1.5) { // 增大闪光范围从0.5到1.5
+                float flashIntensity = (1.0f - progress * 1.5f); // 减慢衰减速度从3.0到1.5
                 if (flashIntensity > 0) {
-                    maxFlash = Math.max(maxFlash, flashIntensity * (1.0f - (float) distance / 0.5f));
+                    // 增强闪光强度
+                    float distanceFalloff = 1.0f - (float) distance / 1.5f;
+                    maxFlash = Math.max(maxFlash, flashIntensity * distanceFalloff * 2.0f); // 增加2倍强度
                 }
             }
         }

@@ -325,6 +325,17 @@ public class ShieldEventHandler {
             ShieldCapability newShield = shieldCap.consumeStrength(1);
             entity.setData(ShieldCapabilities.SHIELD_ATTACHMENT, newShield);
 
+            // 检查护盾是否破碎（强度降到0）
+            if (newShield.strength() == 0) {
+                // 发送破碎效果包到所有客户端
+                com.chadate.funeralmagic.network.ShieldShatterPacket shatterPacket = 
+                    new com.chadate.funeralmagic.network.ShieldShatterPacket(
+                        entity.getId(), 
+                        shieldCenter.x, shieldCenter.y, shieldCenter.z, 
+                        shieldCap.radius());
+                net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(shatterPacket);
+            }
+
             // 同步到所有客户端
             ShieldDataSyncPacket packet = new ShieldDataSyncPacket(
                     entity.getId(),

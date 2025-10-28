@@ -6,6 +6,7 @@ import com.chadate.funeralmagic.capability.ShieldCapability;
 import com.chadate.funeralmagic.client.render.HexagonalShieldMesh;
 import com.chadate.funeralmagic.client.render.ShieldImpactEffect;
 import com.chadate.funeralmagic.client.render.ShieldParticleSystem;
+import com.chadate.funeralmagic.client.render.ShieldShatterEffect;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -79,6 +80,10 @@ public class AdvancedShieldRenderer {
             if (shield != null && shield.isShieldActive()) {
                 renderAdvancedShield(event, entity, shield);
             }
+            // 即使护盾不活跃，如果有破碎效果也要渲染
+            else if (ShieldShatterEffect.hasActiveShatter(entity.getId())) {
+                renderShatterEffectOnly(event, entity);
+            }
         });
     }
     
@@ -117,15 +122,18 @@ public class AdvancedShieldRenderer {
         // 更新受击效果
         ShieldImpactEffect.update();
         
+        // 更新破碎效果
+        ShieldShatterEffect.update();
+        
         // === 多层渲染 ===
         
-        // 第1层：内层能量场（半透明球体，菲涅尔效果）
+        // 第1层：内层能量场
         renderInnerEnergyField(poseStack, radius * 0.97, color, time);
         
-        // 第2层：六边形蜂巢网格（带受击效果）
+        // 第2层：六边形蜂巢网格
         renderHexagonalLayer(poseStack, radius, color, time, strength, shieldCenter);
         
-        // 第3层：受击脉冲圆环（已禁用）
+        // 第3层：受击脉冲圆环
         // renderImpactRings(poseStack, radius, color, time, shieldCenter, entity.getId());
         
         // 第4层：GPU粒子系统
@@ -133,6 +141,11 @@ public class AdvancedShieldRenderer {
         
         // 第5层：外层光晕
         renderOuterGlow(poseStack, radius * 1.05, color, time);
+        
+        // 第6层：破碎效果（如果存在）
+        if (ShieldShatterEffect.hasActiveShatter(entity.getId())) {
+            renderShatterLayer(poseStack, radius, color, shieldCenter, entity.getId());
+        }
         
         poseStack.popPose();
     }
@@ -232,146 +245,6 @@ public class AdvancedShieldRenderer {
         
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
-    }
-    
-    /**
-     * 第3层：GPU粒子系统
-     */
-    /**
-     * 受击脉冲圆环：在受击点沿球面生成一个随时间扩散并淡出的细环
-     */
-    private static void renderImpactRings(PoseStack poseStack, double radius, float[] color, float time, Vec3 shieldCenter, int entityId) {
-        // 渲染设置
-        RenderSystem.enableBlend();
-        // 加法混合，增强亮度但不增加遮挡
-        RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        
-        // *** 关键修复 ***
-        // 启用深度测试，使扩散环能够被前方物体（如角色）正确遮挡
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(515); // GL_LEQUAL - 小于等于深度值的片段通过测试
-        
-        // 关闭深度写入（半透明物体不应修改深度缓冲区）
-        RenderSystem.depthMask(false);
-        RenderSystem.disableCull();
-        
-        Tesselator tesselator = Tesselator.getInstance();
-        Matrix4f matrix = poseStack.last().pose();
-        
-        // 光滑圆环参数
-        final int SEGMENTS = 128;               // 圆环离散段数（更多段数让圆环更光滑）
-        final float THICKNESS_FRAC = 0.035f;    // 环厚（按球半径的弧长比例）
-        final float BASE_ALPHA = 1.8f * GLOW_LAYER_ALPHA_MULTIPLIER; // 基础透明度（提高亮度）
-        final float COLOR_BOOST = 1.6f;        // 颜色提升
-        // 闪爆内环参数
-        final float FLASH_PHASE = 0.2f;        // 受击初期阶段（0..FLASH_PHASE）
-        final float FLASH_THICK_SCALE = 0.6f;  // 内环厚度比例
-        final float FLASH_ALPHA_BOOST = 2.0f;  // 内环额外亮度（增强闪光效果）
-        
-        // 只遍历当前实体的活跃受击
-        var impacts = com.chadate.funeralmagic.client.render.ShieldImpactEffect.getActiveImpactsForEntity(entityId);
-        for (var impact : impacts) {
-            // *** 关键修复：每个环形波使用独立的绘制批次，避免环与环之间产生连接线 ***
-            BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-            // 进度与淡出
-            float progress = impact.getProgress((long)(System.currentTimeMillis() / 50)); // 0..1
-            float fade = (1.0f - progress);
-            if (fade <= 0.01f) continue;
-            
-            // 波半径（球面弧长 = progress * 0.8 * radius） -> 对应夹角g（弧度）
-            double waveRadius = progress * radius * 0.8; // 物理半径上的目标弧长
-            float g = (float)(waveRadius / radius);      // 球心夹角（弧度），近似等于弧长/半径
-            float dg = THICKNESS_FRAC;                   // 厚度对应的角度
-            float gInner = Math.max(0.0f, g - dg * 0.5f);
-            float gOuter = g + dg * 0.5f;
-            
-            // 环中心方向（单位向量）- 直接使用存储的相对方向
-            Vec3 cVec = impact.directionFromCenter;
-            // 选取参考向量避免与cVec平行
-            Vec3 up = Math.abs(cVec.y) > 0.9 ? new Vec3(1,0,0) : new Vec3(0,1,0);
-            Vec3 t1v = cVec.cross(up).normalize();
-            Vec3 t2v = cVec.cross(t1v).normalize();
-            
-            // 颜色（稍微提亮）
-            float cr = Math.min(1.0f, color[0] * COLOR_BOOST);
-            float cg = Math.min(1.0f, color[1] * COLOR_BOOST);
-            float cb = Math.min(1.0f, color[2] * COLOR_BOOST);
-            float alpha = BASE_ALPHA * fade;
-            
-            // 生成光滑圆环（三角带：外边一圈 + 内边一圈）
-            for (int i = 0; i <= SEGMENTS; i++) {
-                float theta = (float)(i * (Math.PI * 2.0) / SEGMENTS);
-                // 环方向（切向旋转）
-                Vec3 dir = new Vec3(
-                    t1v.x * Math.cos(theta) + t2v.x * Math.sin(theta),
-                    t1v.y * Math.cos(theta) + t2v.y * Math.sin(theta),
-                    t1v.z * Math.cos(theta) + t2v.z * Math.sin(theta)
-                );
-                
-                // 光滑圆环：不添加噪声扰动，直接使用精确的角度
-                // 外圈点（角度 gOuter）
-                Vec3 onSphereOuter = cVec.scale(Math.cos(gOuter)).add(dir.scale(Math.sin(gOuter))).normalize().scale(radius);
-                // 内圈点（角度 gInner）
-                Vec3 onSphereInner = cVec.scale(Math.cos(gInner)).add(dir.scale(Math.sin(gInner))).normalize().scale(radius);
-                
-                // 边缘渐变效果：外边缘更亮，内边缘稍暗，形成清晰的轮廓
-                float edgeProgress = (float)i / SEGMENTS;
-                float edgeFactor = 1.0f - Math.abs((edgeProgress * 2.0f) - 1.0f) * 0.1f; // 轻微的亮度变化
-                
-                // 写入两点形成条带
-                buffer.addVertex(matrix, (float)onSphereOuter.x, (float)onSphereOuter.y, (float)onSphereOuter.z)
-                      .setColor(cr, cg, cb, alpha * edgeFactor);
-                buffer.addVertex(matrix, (float)onSphereInner.x, (float)onSphereInner.y, (float)onSphereInner.z)
-                      .setColor(cr, cg, cb, alpha * 0.7f * edgeFactor);
-            }
-            
-            // 绘制这个环形波
-            BufferUploader.drawWithShader(buffer.buildOrThrow());
-            
-            // 受击初期叠加极细高亮内环（闪爆点）
-            if (progress < FLASH_PHASE) {
-                // 为闪爆内环创建独立的BufferBuilder
-                BufferBuilder flashBuffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-                
-                float flashK = 1.0f - (progress / FLASH_PHASE); // 0..1
-                float flashAlpha = Math.min(1.0f, alpha * FLASH_ALPHA_BOOST * flashK);
-                float dgFlash = dg * FLASH_THICK_SCALE;
-                float gInnerFlash = Math.max(0.0f, g - dgFlash * 0.5f);
-                float gOuterFlash = g + dgFlash * 0.5f;
-                
-                for (int i = 0; i <= SEGMENTS; i++) {
-                    float theta = (float)(i * (Math.PI * 2.0) / SEGMENTS);
-                    Vec3 dir = new Vec3(
-                        t1v.x * Math.cos(theta) + t2v.x * Math.sin(theta),
-                        t1v.y * Math.cos(theta) + t2v.y * Math.sin(theta),
-                        t1v.z * Math.cos(theta) + t2v.z * Math.sin(theta)
-                    );
-                    
-                    // 光滑闪爆内环：不使用噪声，直接使用精确的角度
-                    Vec3 pOuter = cVec.scale(Math.cos(gOuterFlash)).add(dir.scale(Math.sin(gOuterFlash))).normalize().scale(radius);
-                    Vec3 pInner = cVec.scale(Math.cos(gInnerFlash)).add(dir.scale(Math.sin(gInnerFlash))).normalize().scale(radius);
-                    
-                    // 用更亮的颜色（白色倾向）营造闪光效果
-                    float wr = Math.min(1.0f, (cr + 1.5f) * 0.5f);
-                    float wg = Math.min(1.0f, (cg + 1.5f) * 0.5f);
-                    float wb = Math.min(1.0f, (cb + 1.5f) * 0.5f);
-                    
-                    flashBuffer.addVertex(matrix, (float)pOuter.x, (float)pOuter.y, (float)pOuter.z)
-                          .setColor(wr, wg, wb, flashAlpha);
-                    flashBuffer.addVertex(matrix, (float)pInner.x, (float)pInner.y, (float)pInner.z)
-                          .setColor(wr, wg, wb, flashAlpha * 0.85f);
-                }
-                
-                // 绘制闪爆内环
-                BufferUploader.drawWithShader(flashBuffer.buildOrThrow());
-            }
-        }
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        // 恢复默认混合
-        RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
     }
     
@@ -511,5 +384,103 @@ public class AdvancedShieldRenderer {
             // 弱化护盾：柔和橙红色（降低饱和度）
             return new float[]{0.6f, 0.2f, 0.15f};
         }
+    }
+    
+    /**
+     * 第6层：破碎效果渲染
+     */
+    private static void renderShatterLayer(PoseStack poseStack, double radius, float[] color, Vec3 shieldCenter, int entityId) {
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515);
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        
+        Matrix4f matrix = poseStack.last().pose();
+        
+        // 渲染破碎碎片
+        ShieldShatterEffect.renderShatter(buffer, matrix, entityId, shieldCenter,
+                color[0], color[1], color[2], 0.8f);
+        
+        // 尝试渲染，如果buffer为空则忽略
+        try {
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
+        } catch (IllegalStateException ignored) {
+            // Buffer为空时忽略
+        }
+        
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
+    }
+    
+    /**
+     * 独立渲染破碎效果（当护盾已关闭但破碎动画还在播放时）
+     */
+    private static void renderShatterEffectOnly(RenderLevelStageEvent event, Entity entity) {
+        PoseStack poseStack = event.getPoseStack();
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        
+        // 获取相机位置
+        Vec3 cameraPos = event.getCamera().getPosition();
+        
+        // 使用 partialTick 插值实体位置
+        Vec3 shieldCenter = new Vec3(
+            Mth.lerp(partialTick, entity.xOld, entity.getX()),
+            Mth.lerp(partialTick, entity.yOld, entity.getY()) + entity.getEyeHeight() / 2,
+            Mth.lerp(partialTick, entity.zOld, entity.getZ())
+        );
+        
+        // 计算相对位置
+        double relX = shieldCenter.x - cameraPos.x;
+        double relY = shieldCenter.y - cameraPos.y;
+        double relZ = shieldCenter.z - cameraPos.z;
+        
+        poseStack.pushPose();
+        poseStack.translate(relX, relY, relZ);
+        
+        // 更新破碎效果
+        ShieldShatterEffect.update();
+        
+        // 渲染破碎效果
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515);
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        
+        Matrix4f matrix = poseStack.last().pose();
+        
+        // 使用默认颜色（蓝色）
+        float[] color = new float[]{0.3f, 0.7f, 1.0f};
+        
+        // 渲染破碎碎片
+        ShieldShatterEffect.renderShatter(buffer, matrix, entity.getId(), shieldCenter,
+                color[0], color[1], color[2], 0.8f);
+        
+        // 尝试渲染，如果buffer为空则忽略
+        try {
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
+        } catch (IllegalStateException ignored) {
+            // Buffer为空时忽略
+        }
+        
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
+        
+        poseStack.popPose();
     }
 }

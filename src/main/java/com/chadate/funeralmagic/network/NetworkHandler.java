@@ -39,5 +39,12 @@ public class NetworkHandler {
             ShieldImpactPacket.STREAM_CODEC,
             ShieldImpactPacket::handleClient
         );
+        
+        // 注册护盾破碎效果包（服务端 -> 客户端）
+        registrar.playToClient(
+            ShieldShatterPacket.TYPE,
+            ShieldShatterPacket.STREAM_CODEC,
+            ShieldShatterPacket::handleClient
+        );
     }
 }
